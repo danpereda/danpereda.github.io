@@ -5,12 +5,57 @@
     <link>https://danpereda.github.io/</link>
       <atom:link href="https://danpereda.github.io/index.xml" rel="self" type="application/rss+xml" />
     <description>Academic</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 24 May 2020 17:57:12 -0400</lastBuildDate>
     <image>
       <url>https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>Academic</title>
       <link>https://danpereda.github.io/</link>
     </image>
+    
+    <item>
+      <title>Test</title>
+      <link>https://danpereda.github.io/post/test/</link>
+      <pubDate>Sun, 24 May 2020 17:57:12 -0400</pubDate>
+      <guid>https://danpereda.github.io/post/test/</guid>
+      <description>&lt;p&gt;$ x = 3 \alpha $&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-a-caption&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/background.jpg&#34; data-caption=&#34;A caption&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/background.jpg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    A caption
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+</description>
+    </item>
     
   </channel>
 </rss>
