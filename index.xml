@@ -1,24 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Academic</title>
+    <title>Danpereda</title>
     <link>https://danpereda.github.io/</link>
       <atom:link href="https://danpereda.github.io/index.xml" rel="self" type="application/rss+xml" />
-    <description>Academic</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 24 May 2020 20:32:51 -0400</lastBuildDate>
+    <description>Danpereda</description>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 24 May 2020 17:57:12 -0400</lastBuildDate>
     <image>
       <url>https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
-      <title>Academic</title>
+      <title>Danpereda</title>
       <link>https://danpereda.github.io/</link>
     </image>
-    
-    <item>
-      <title>Bilevel optimization applied to strategic pricing in electricity markets and extension to markets with massive entry of renewable energies</title>
-      <link>https://danpereda.github.io/talk/pgmo/</link>
-      <pubDate>Sun, 24 May 2020 20:32:51 -0400</pubDate>
-      <guid>https://danpereda.github.io/talk/pgmo/</guid>
-      <description></description>
-    </item>
     
     <item>
       <title>Test</title>
@@ -63,6 +55,14 @@
 &lt;/figure&gt;
 
 </description>
+    </item>
+    
+    <item>
+      <title>Bilevel optimization applied to strategic pricing in electricity markets and extension to markets with massive entry of renewable energies</title>
+      <link>https://danpereda.github.io/talk/pgmo/</link>
+      <pubDate>Tue, 03 Dec 2019 08:30:51 -0400</pubDate>
+      <guid>https://danpereda.github.io/talk/pgmo/</guid>
+      <description></description>
     </item>
     
   </channel>
