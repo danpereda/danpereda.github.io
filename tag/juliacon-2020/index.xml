@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Danpereda</title>
-    <link>https://danpereda.github.io/</link>
-      <atom:link href="https://danpereda.github.io/index.xml" rel="self" type="application/rss+xml" />
-    <description>Danpereda</description>
+    <title>JuliaCon 2020 | Danpereda</title>
+    <link>https://danpereda.github.io/tag/juliacon-2020/</link>
+      <atom:link href="https://danpereda.github.io/tag/juliacon-2020/index.xml" rel="self" type="application/rss+xml" />
+    <description>JuliaCon 2020</description>
     <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Tue, 28 Jul 2020 17:57:12 -0400</lastBuildDate>
     <image>
       <url>https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
-      <title>Danpereda</title>
-      <link>https://danpereda.github.io/</link>
+      <title>JuliaCon 2020</title>
+      <link>https://danpereda.github.io/tag/juliacon-2020/</link>
     </image>
     
     <item>
@@ -329,14 +329,6 @@ end
 &lt;p&gt;Now we just need to simulate the dynamics of the system. We will consider parameters $p_l$ and $p_R$, the probabilities of infection and recovery at each time step, respectively.
 This part will be posted in Part 2.&lt;/p&gt;
 </description>
-    </item>
-    
-    <item>
-      <title>Bilevel optimization applied to strategic pricing in electricity markets and extension to markets with massive entry of renewable energies</title>
-      <link>https://danpereda.github.io/talk/pgmo/</link>
-      <pubDate>Tue, 03 Dec 2019 08:30:51 -0400</pubDate>
-      <guid>https://danpereda.github.io/talk/pgmo/</guid>
-      <description></description>
     </item>
     
   </channel>

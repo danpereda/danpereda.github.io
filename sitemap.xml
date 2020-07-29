@@ -3,18 +3,33 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://danpereda.github.io/</loc>
-    <lastmod>2020-05-24T17:57:12-04:00</lastmod>
+    <loc>https://danpereda.github.io/tag/covid-19/</loc>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
   </url>
   
   <url>
-    <loc>https://danpereda.github.io/post/</loc>
-    <lastmod>2020-05-24T17:57:12-04:00</lastmod>
+    <loc>https://danpereda.github.io/</loc>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://danpereda.github.io/tag/juliacon-2020/</loc>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
   </url>
   
   <url>
     <loc>https://danpereda.github.io/post/test/</loc>
-    <lastmod>2020-05-24T17:57:12-04:00</lastmod>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://danpereda.github.io/post/</loc>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://danpereda.github.io/tags/</loc>
+    <lastmod>2020-07-29T17:57:12-04:00</lastmod>
   </url>
   
   <url>
@@ -45,10 +60,6 @@
   
   <url>
     <loc>https://danpereda.github.io/publication/</loc>
-  </url>
-  
-  <url>
-    <loc>https://danpereda.github.io/tags/</loc>
   </url>
   
 </urlset>

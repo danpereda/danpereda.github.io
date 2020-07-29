@@ -27,8 +27,7 @@
   
     
   
-  <meta name="description" content="$ x = 3 \alpha $
-A caption">
+  <meta name="description" content="An overview of what I&#39;ve learned from the workshop">
 
   
   <link rel="alternate" hreflang="en-us" href="https://danpereda.github.io/post/test/">
@@ -238,15 +237,14 @@
   
   <meta property="og:site_name" content="Danpereda">
   <meta property="og:url" content="https://danpereda.github.io/post/test/">
-  <meta property="og:title" content="Test | Danpereda">
-  <meta property="og:description" content="$ x = 3 \alpha $
-A caption"><meta property="og:image" content="https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
+  <meta property="og:title" content="Learn Julia via epidemic modelling Part 1 | Danpereda">
+  <meta property="og:description" content="An overview of what I&#39;ve learned from the workshop"><meta property="og:image" content="https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
   <meta property="twitter:image" content="https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png"><meta property="og:locale" content="en-us">
   
     
-      <meta property="article:published_time" content="2020-05-24T17:57:12-04:00">
+      <meta property="article:published_time" content="2020-07-28T17:57:12-04:00">
     
-    <meta property="article:modified_time" content="2020-05-24T17:57:12-04:00">
+    <meta property="article:modified_time" content="2020-07-29T17:57:12-04:00">
   
 
   
@@ -272,10 +270,10 @@
     "@type": "WebPage",
     "@id": "https://danpereda.github.io/post/test/"
   },
-  "headline": "Test",
+  "headline": "Learn Julia via epidemic modelling Part 1",
   
-  "datePublished": "2020-05-24T17:57:12-04:00",
-  "dateModified": "2020-05-24T17:57:12-04:00",
+  "datePublished": "2020-07-28T17:57:12-04:00",
+  "dateModified": "2020-07-29T17:57:12-04:00",
   
   "author": {
     "@type": "Person",
@@ -290,7 +288,7 @@
       "url": "https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png"
     }
   },
-  "description": "$ x = 3 \\alpha $\n\r\rA caption\r\r\r"
+  "description": "An overview of what I've learned from the workshop"
 }
 </script>
 
@@ -308,7 +306,7 @@
 
 
 
-  <title>Test | Danpereda</title>
+  <title>Learn Julia via epidemic modelling Part 1 | Danpereda</title>
 
 </head>
 
@@ -532,7 +530,7 @@
   
   
 <div class="article-container pt-3">
-  <h1>Test</h1>
+  <h1>Learn Julia via epidemic modelling Part 1</h1>
 
   
 
@@ -550,8 +548,10 @@
     
     
       
+          Last updated on
+      
     
-    May 24, 2020
+    Jul 29, 2020
   </span>
   
 
@@ -560,7 +560,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    1 min read
+    10 min read
   </span>
   
 
@@ -596,7 +596,183 @@
   <div class="article-container">
 
     <div class="article-style">
-      <p>$ x = 3 \alpha $</p>
+      <p>This is what I&rsquo;ve learned from the 
+<a href="https://live.juliacon.org/talk/LSNEWV" target="_blank" rel="noopener">workshop by David P. Sanders</a></p>
+<p>We will <strong>simulate</strong> the <strong>dynamics</strong> of an epidemic, i.e, an outbreak of an infectious disease. In a population of people with <strong>N</strong> individuals we will be interested in how the number of susceptible (<strong>S</strong>),
+infectious (<strong>I</strong>) and recovered (<strong>R</strong>) individual changes over time. We will begin by looking at simple models that take into account only total numbers of people, by the end of the workshop we should be able to structure a more complicated <strong>individual - based</strong> or <strong>agent - based</strong> simulation, where we model individual people moving around space and interacting with one another.</p>
+<p>For Simplicity, those individuals will be modelled as <strong>random walks</strong> on a grid, i.e, points that choose a neighbouring grid point at random to jump to.</p>
+<h2 id="generic-programming-random-walks">Generic programming: Random walks</h2>
+<p>Each step roughly corresponds to a different function. Each different type of walker will need a different way to:</p>
+<ul>
+<li><code>initialize()</code> itself and then</li>
+<li><code>move()</code>  which will return the new position chosen by the walker.</li>
+</ul>
+<p>Therefore a walk of length T is given by the following function</p>
+<pre><code class="language-julia">function walk(T)
+    pos = initialize()
+    trajectory = [pos]    # make a Vector that contains just the current value of `pos`
+    for t in 1:T
+        new_pos = move(pos)
+        push!(trajectory, new_pos)   # append to the Vector
+        pos = new_pos     # update for next iteration
+    end
+    return trajectory
+end
+</code></pre>
+<p>We noticed that this depends on the functions <code>initialize()</code> and <code>move()</code> that should be defined on the global scope. Since a random walk can be in <strong>n</strong> dimension, we would like to be able to run
+the same function of all dimension, this is what is called generic programming.</p>
+<pre><code class="language-julia">function walk(initialize, move, T)
+    pos = initialize()
+    trajectory = [pos]
+    for t in 1:T
+        pos = move(pos)               # *update* the value pointed to by `pos`
+        push!(trajectory, deepcopy(pos))  # at the cost of needing to copy `pos` when we store it if it is a vector
+    end
+    return trajectory
+end
+</code></pre>
+<p>This way we can have different <code>initialize()</code> and <code>move()</code> functions depending on the dimension of the walker and we will be able to recover the trajectory calling the same walk function.</p>
+<p>Now the question is, how can we efficiently store information about each walker? we would like to now not only the trajectory but also if he is susceptible, infected or recovered. This leads us to the following section.</p>
+<h2 id="composite-types">Composite types</h2>
+<p>The main <strong>idea</strong> is to collect up or aggregate all relevant information into a new data structure, called a composite type (or custom type, aggregate type, user-defined type, &hellip;).</p>
+<p>Basically we want to be able to specify the &ldquo;template&rdquo; / &ldquo;shape&rdquo; / &ldquo;structure&rdquo; for a bag or box that will contain all the relevant information; this specification is the type itself. Then we need to produce objects which have that structure, i.e. which contain the corresponding variables; these are called instances.</p>
+<p>In Julia this is accomplished using the struct keyword (short for &ldquo;structure&rdquo;). For example, we can make an object that contains the  $x$  and  $y$  coordinates of a walker in 2 dimensions as:</p>
+<pre><code class="language-julia">struct Walker2D
+    x::Int64
+    y::Int64
+end
+</code></pre>
+<h3 id="outer-constructors">(Outer) constructors</h3>
+<p>Suppose we want walkers to be born at the origin unless otherwise stated. We don&rsquo;t want to have to write <code>Walker2D(0, 0)</code> each time; we would like to just write <code>Walker2D()</code>. In other words, we want to add a new method to the function Walker2D:</p>
+<p><code>Walker2D() = Walker2D(0, 0)</code></p>
+<p>Such a constructor is called an outer constructor, since it lives outside the definition of the type.</p>
+<h3 id="making-walkers-move">Making walkers move</h3>
+<p>We are not allowed to modify the fields of a walker because we defined the structure as being <strong>immutable</strong> (if we want it to be <strong>mutable</strong> we need to specify it). Usually this will give us better performance.
+So in order to make our walker move, we need to create a <em>new object</em> with the new position. This could seem expensive, but in fact the Julia compiler will often be able to completely remove this object creation and produce code that is just as efficient as if there were no object at all!</p>
+<p>Suppose we want to only move on the $ x - axis $ then we can just define:</p>
+<pre><code class="language-julia">move(w::Walker2D) = Walker2D(w.x + rand( (-1,1) ), w.y)
+</code></pre>
+<p>Now supposed we need to defined a function that moves us to an adjacent point at random, then we can just throw a coin an choose a direction based on that result.</p>
+<pre><code class="language-julia">function jump(w::Walker2D)
+    r = rand()
+    if r &gt; 0.5
+        return Walker2D(w.x + rand( (-1,1) ), w.y)
+    else
+        return Walker2D(w.x, w.y + rand( (-1,1) ) )
+    end
+end
+</code></pre>
+<h3 id="generic-programming-with-types">Generic programming with Types</h3>
+<p>Before we create a walk function that depends on the functions <code>initialize()</code> and <code>move()</code>, but what if we just have one of each function with different methods? this solution should be better, otherwise we would have
+to define functions <code>initialize_1D()</code> and <code>initialize_2D()</code> to pass it as an argument an make a distinction between 1 dimension and 2 dimension walkers.</p>
+<pre><code class="language-julia">&quot;Calculate the trajectory of a walker `w` for time `T`.&quot;
+function walk(w, T)
+    trajectory = [w]   # store the current (initial) position of `w`
+    for t in 1:T
+        w = move(w)    # update the value bound to `w`
+        push!(trajectory, deepcopy(w))   # store the current value
+    end
+
+    return trajectory
+end
+</code></pre>
+<p>We have not specified a type of $w$ this means that if we have a move function that works for instance for Integer numbers (BigInt, Int64 and so on) it should work and it should also work if we have a Walker2D
+as an argument, since we have already defined</p>
+<h2 id="types-for-agents">Types for agents</h2>
+<p>We are getting towards our goal of putting everything together to make a model of people moving around and interacting with one another. Most people start off susceptible, but when an infectious person meets a susceptible the infection is transmitted with a certain probability.</p>
+<p>We will make an individual-based model, also called an agent-based model. We need a struct called Agent that contains whatever information an agent needs. In our case we will need a position and an infection status.</p>
+<p>The position will behave almost like a normal random walk that we have seen before, while the infection status needs to reflect whether the agent is susceptible (S), infectious (I) or recovered / removed (R).</p>
+<h3 id="enums">Enums</h3>
+<p>We could represent the infection status simply using an integer, e.g. 0, 1 or 2. But then our code will be hard to read, since we will be comparing the infection status to numbers all the time without remembering which one is which.</p>
+<p>A nice solution is just to use <code>@enums</code> macro.</p>
+<pre><code class="language-julia">@enum InfectionStatus S=1 I R   # specify that `S` corresponds to the value 1
+</code></pre>
+<p>We will have a <em>new Type</em> InfectionStatus, with possible values <strong>S</strong>, <strong>I</strong> and <strong>R</strong> that also store a numerical value $ S = 1 $, $ I = 2$ and $ R = 3$. Then we can do <code>Int(I)</code> and it will return the integer 2, we can also do</p>
+<pre><code class="language-julia">status = I
+if status == I
+    println(&quot;infected!&quot;)
+end
+</code></pre>
+<p>and get <strong>infected!</strong> as a result. This way the InfectionStatus information gets easy to manipulate and remember in our code.</p>
+<h3 id="composition-and-parametrised-types">Composition and Parametrised Types</h3>
+<p>We can place one object <em>inside</em> another one.</p>
+<p>Suppose we have defined a SimpleWalker2D structure as follows.</p>
+<pre><code class="language-julia">struct SimpleWalker2D
+    x::Int64
+    y::Int64
+end
+</code></pre>
+<p>Then we can define an Agent as:</p>
+<pre><code class="language-julia">struct Agent
+    position::SimpleWalker2D
+    status::InfectionStatus
+end
+</code></pre>
+<p>Then we can create an infected Agent in position $(1,2)$ by simply doing <code> w = SimpleWalker2D(1,2)</code> and then <code>a = Agent(w,I)</code>.</p>
+<p>As we learned before, we would like to have our program a bit more generic. One way of doing it is by parametrizing Types:</p>
+<pre><code class="language-julia">struct Agent{T}
+    position::T
+    status::InfectionStatus
+end
+</code></pre>
+<p>Sometimes beeing too generic can cause troubles if not careful. Then we can parametrise for only some Types. Suppose there is a common abstract type AbstractWalker for all of the possible types that we want to be able to use for T (this can be 1,2 and 3 dimension walkers for example), then we can write:</p>
+<pre><code class="language-julia">struct Agent{T &lt;: AbstractWalker}
+    position::T
+    status::InfectionStatus
+end
+</code></pre>
+<h2 id="spatial-sir-model">Spatial SIR model</h2>
+<p>Now we are ready to build the spatial model. It will consist of walkers moving in a 2D box.
+This was an exercise left to the audience at the end of the talk, so we will solve it as it is written on the notebook.</p>
+<h3 id="confinement-inside-a-box">Confinement inside a box</h3>
+<p>We need agents to live inside a box so that they don&rsquo;t disperse.</p>
+<h4 id="exercise">Exercise</h4>
+<ul>
+<li>Make a <code>ConfinedWalker2D</code> type. Its fields are a <code>Walker2D</code> object and a box size, <code>L</code>.</li>
+</ul>
+<pre><code class="language-julia">struct Walker2D
+   x::Int64
+   y::Int64
+end
+</code></pre>
+<pre><code class="language-julia">struct ConfinedWalker2D
+    w::Walker2D
+    L::Int64
+end
+</code></pre>
+<p>The important part here is that we just give the size of the box as a parameter. We do not do an inner constructor
+that checks if the position of the walker is inside the box. This is because inner constructors can be bothersome so we just need to keep
+in mind that we should check boundaries at some future function.</p>
+<ul>
+<li>Extend <code>move</code> to <code>ConfinedWalker2D</code>. If the walker tries to jump outside the box, i.e. outside the sites 1 to  𝐿 , in either direction, then it remains where it is.</li>
+</ul>
+<pre><code class="language-julia">function move(cw::ConfinedWalker2D)
+    r = rand()
+    step= rand([-1,1])
+    if r &gt; 0.5
+        posx = cw.w.x + step
+        posy = cw.w.y
+    else
+         posx = cw.w.x
+         posy = cw.w.y + step
+     end
+    if (posx &lt;= cw.L)&amp;&amp; (1 &lt;= posx)&amp;&amp;(posy &lt;= cw.L)&amp;&amp; (1 &lt;= posy)
+        w = Walker2D(posx,posy)
+        return ConfinedWalker2D(w, cw.L)
+    else
+        return cw
+    end
+end
+</code></pre>
+<ul>
+<li>Make a confined <code>Agent</code> and calculate and draw its trajectory to make sure it stays inside the box.</li>
+</ul>
+<pre><code class="language-julia">struct Agent{T}
+    cw::T
+    status::InfectionStatus
+end
+</code></pre>
+<p>Let&rsquo;s consider $L = 6$ and initial position $(5,5)$</p>
 
 
 
@@ -614,25 +790,123 @@
 
 
 
-<figure id="figure-a-caption">
+<figure id="figure-trajectory">
 
 
-  <a data-fancybox="" href="/img/post/background.jpg" data-caption="A caption">
+  <a data-fancybox="" href="/img/post/anim.gif" data-caption="Trajectory">
 
 
-  <img src="/img/post/background.jpg" alt=""  >
+  <img src="/img/post/anim.gif" alt=""  >
 </a>
 
 
   
   
   <figcaption>
-    A caption
+    Trajectory
   </figcaption>
 
 
 </figure>
 
+<p>We can see how it does not move outside the border and stays in the same position in the $16th$ move for example.</p>
+<h2 id="initialization">Initialization</h2>
+<h3 id="exercises">Exercises</h3>
+<ul>
+<li>Write a function <code>initialize</code> that takes parameters <code>𝐿</code>, the box length, and <code>𝑁</code>, the number of agents. It builds, one by one, a Vector of agents, by proposing a position for each one and checking if that position is already occupied. If it is occupied, it should generate another one, and so on until it finds a free spot. All of the agents should have state <code>S</code>, except for one infectious individual (<code>I</code>).</li>
+</ul>
+<p>To do this you should write a function <code>check_occupied</code> that checks if a particular position is occupied.</p>
+<pre><code class="language-julia">function check_ocupied(w::Walker2D,v)
+    m = length(v)
+    if m == 0
+        return false
+    else
+        for i = 1:m
+            if (w.x == v[i].cw.w.x) &amp;&amp; (w.y == v[i].cw.w.x)
+                return true
+            end
+        end
+        return false
+    end
+end
+</code></pre>
+<pre><code class="language-julia">function initialize(L,N)
+    i= 0
+    v = []
+    while i &lt; N
+    x = rand(-L:L)
+    y = rand(-L:L)
+    w = Walker2D(x,y)
+        if !check_ocupied(w,v)
+            a = Agent( ConfinedWalker2D(w,L), S)
+            push!(v,deepcopy(a))
+            i = i+1
+        end
+    end
+    index = rand(1:N)
+    v[index] = Agent(v[index].position,I)
+    return v
+end
+</code></pre>
+<ul>
+<li>Write a function  <code>visualize_agents</code> that takes in a collection of agents as argument. It should plot a point for each agent, coloured according to its status</li>
+</ul>
+<pre><code class="language-julia">function visualize_agents(v)
+    m = length(v)
+    x = SA[zeros(m)]
+    y = SA[zeros(m)]
+    infection_status = []
+    for i = 1:m
+        x[1][i] = v[i].cw.w.x
+        y[1][i] = v[i].cw.w.y
+        push!(infection_status,deepcopy(Int(v[i].status)))
+    end
+    return scatter((x,y) , c = infection_status, ratio =1, leg = false)
+end
+</code></pre>
+<ul>
+<li>Run these functions to visualize the initial condition.</li>
+</ul>
+<p>Let&rsquo;s consider $L = 6$ and $N = 20$. Then we get the following:</p>
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+<figure id="figure-initial-condition">
+
+
+  <a data-fancybox="" href="/img/post/VisualizeAgents.png" data-caption="Initial condition">
+
+
+  <img src="/img/post/VisualizeAgents.png" alt=""  >
+</a>
+
+
+  
+  
+  <figcaption>
+    Initial condition
+  </figcaption>
+
+
+</figure>
+
+<h2 id="dynamics">Dynamics</h2>
+<p>Now we just need to simulate the dynamics of the system. We will consider parameters $p_l$ and $p_R$, the probabilities of infection and recovery at each time step, respectively.
+This part will be posted in Part 2.</p>
 
     </div>
 
@@ -641,6 +915,14 @@
 
 
 
+
+<div class="article-tags">
+  
+  <a class="badge badge-light" href="/tag/covid-19/">COVID - 19</a>
+  
+  <a class="badge badge-light" href="/tag/juliacon-2020/">JuliaCon 2020</a>
+  
+</div>
 
 
 
@@ -655,7 +937,7 @@
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=https://danpereda.github.io/post/test/&amp;text=Test" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=https://danpereda.github.io/post/test/&amp;text=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -668,7 +950,7 @@
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=https://danpereda.github.io/post/test/&amp;t=Test" target="_blank" rel="noopener" class="share-btn-facebook">
+        <a href="https://www.facebook.com/sharer.php?u=https://danpereda.github.io/post/test/&amp;t=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -681,7 +963,7 @@
       
       
       <li>
-        <a href="mailto:?subject=Test&amp;body=https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-email">
+        <a href="mailto:?subject=Learn%20Julia%20via%20epidemic%20modelling%20Part%201&amp;body=https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-email">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -694,7 +976,7 @@
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=https://danpereda.github.io/post/test/&amp;title=Test" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -707,7 +989,7 @@
       
       
       <li>
-        <a href="https://web.whatsapp.com/send?text=Test%20https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+        <a href="https://web.whatsapp.com/send?text=Learn%20Julia%20via%20epidemic%20modelling%20Part%201%20https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -720,7 +1002,7 @@
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=https://danpereda.github.io/post/test/&amp;title=Test" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
