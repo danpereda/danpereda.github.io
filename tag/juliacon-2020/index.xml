@@ -13,7 +13,7 @@
     </image>
     
     <item>
-      <title>Learn Julia via epidemic modelling Part 1</title>
+      <title>Learn Julia via epidemic modelling</title>
       <link>https://danpereda.github.io/post/test/</link>
       <pubDate>Tue, 28 Jul 2020 17:57:12 -0400</pubDate>
       <guid>https://danpereda.github.io/post/test/</guid>
@@ -98,7 +98,7 @@ function walk(w, T)
 end
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;We have not specified a type of $w$ this means that if we have a move function that works for instance for Integer numbers (BigInt, Int64 and so on) it should work and it should also work if we have a Walker2D
-as an argument, since we have already defined&lt;/p&gt;
+as an argument.&lt;/p&gt;
 &lt;h2 id=&#34;types-for-agents&#34;&gt;Types for agents&lt;/h2&gt;
 &lt;p&gt;We are getting towards our goal of putting everything together to make a model of people moving around and interacting with one another. Most people start off susceptible, but when an infectious person meets a susceptible the infection is transmitted with a certain probability.&lt;/p&gt;
 &lt;p&gt;We will make an individual-based model, also called an agent-based model. We need a struct called Agent that contains whatever information an agent needs. In our case we will need a position and an infection status.&lt;/p&gt;
@@ -327,7 +327,112 @@ end
 
 &lt;h2 id=&#34;dynamics&#34;&gt;Dynamics&lt;/h2&gt;
 &lt;p&gt;Now we just need to simulate the dynamics of the system. We will consider parameters $p_l$ and $p_R$, the probabilities of infection and recovery at each time step, respectively.
-This part will be posted in Part 2.&lt;/p&gt;
+The system evolves as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;First the system is initialized with only one random infected agent.&lt;/li&gt;
+&lt;li&gt;Secondly, a single agent choosen randomly, call it $i$ tries to move to an adjancent position. If the position &lt;strong&gt;is&lt;/strong&gt; ocuppied, by agent $j$, then &lt;em&gt;neither&lt;/em&gt; of them move, but they interact as follows:&lt;/li&gt;
+&lt;li&gt;If agent $i$ is infected and agent $j$ is susceptible then agent $j$ gets infected with probability $p_I$&lt;/li&gt;
+&lt;li&gt;If agent $i$ is infected, it recovers with probability $p_R$.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We do this part defining &lt;code&gt;step()&lt;/code&gt; function&lt;/p&gt;
+&lt;p&gt;Notice that this model does not allow a recovered agent to get infected again.&lt;/p&gt;
+&lt;p&gt;Then the step! function looks as follows:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;&amp;quot;Receives a vector of agents and the required probabilities,
+returns a modified agent vector&amp;quot;
+function step!(v, pI, pR)
+    n = length(v)
+    i = rand(1:n)
+    cwi = move(v[i].cw) # we move agent i 
+    index = check_ocupied2(cwi.w,v) # Give us [] or the index j of agent
+    m = length(index) # can be 0 or 1
+    if m == 0
+        v[i] = Agent(cwi, v[i].status)
+    else
+        for j in index
+            v[i],v[j] = infection(v[i],v[j], pI, pR)
+        end
+    end
+    return v
+end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;Infection()&lt;/code&gt; function makes the interaction between the agents $i$ and $j$ following the previous rules.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s see how the system evolves after $1000$ steps. For this we will use $L = 6$ , $N = 30$, $p_I = 0.5$ and $p_R = 0.05$.
+Orange means infected, Blue is susceptible and Green is recovered.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-system-evolution&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/evolution-1000-0.5-0.05.gif&#34; data-caption=&#34;System Evolution&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/evolution-1000-0.5-0.05.gif&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    System Evolution
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-sir&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SIR.svg&#34; data-caption=&#34;SIR&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SIR.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    SIR
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;final-thoughts&#34;&gt;Final thoughts&lt;/h3&gt;
+&lt;p&gt;This workshop and to be honest most of JuliaCon 2020 workshops were amazing, as you can learn so much. There is a known saying about Mathematicians being able to code and solve problems at the cost of doing a really long, slow and bad algorithm. Going to this workshops and trying to learn as much Julia as possible during JuliaCon is making me improve a lot in terms of coding and knowing the capabilities of the language, so I recomend checking the workshops videos on 
+&lt;a href=&#34;https://www.youtube.com/c/TheJuliaLanguage&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;youtube&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

@@ -237,7 +237,7 @@
   
   <meta property="og:site_name" content="Danpereda">
   <meta property="og:url" content="https://danpereda.github.io/post/test/">
-  <meta property="og:title" content="Learn Julia via epidemic modelling Part 1 | Danpereda">
+  <meta property="og:title" content="Learn Julia via epidemic modelling | Danpereda">
   <meta property="og:description" content="An overview of what I&#39;ve learned from the workshop"><meta property="og:image" content="https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
   <meta property="twitter:image" content="https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png"><meta property="og:locale" content="en-us">
   
@@ -270,7 +270,7 @@
     "@type": "WebPage",
     "@id": "https://danpereda.github.io/post/test/"
   },
-  "headline": "Learn Julia via epidemic modelling Part 1",
+  "headline": "Learn Julia via epidemic modelling",
   
   "datePublished": "2020-07-28T17:57:12-04:00",
   "dateModified": "2020-07-29T17:57:12-04:00",
@@ -306,7 +306,7 @@
 
 
 
-  <title>Learn Julia via epidemic modelling Part 1 | Danpereda</title>
+  <title>Learn Julia via epidemic modelling | Danpereda</title>
 
 </head>
 
@@ -530,7 +530,7 @@
   
   
 <div class="article-container pt-3">
-  <h1>Learn Julia via epidemic modelling Part 1</h1>
+  <h1>Learn Julia via epidemic modelling</h1>
 
   
 
@@ -560,7 +560,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    10 min read
+    11 min read
   </span>
   
 
@@ -677,7 +677,7 @@ function walk(w, T)
 end
 </code></pre>
 <p>We have not specified a type of $w$ this means that if we have a move function that works for instance for Integer numbers (BigInt, Int64 and so on) it should work and it should also work if we have a Walker2D
-as an argument, since we have already defined</p>
+as an argument.</p>
 <h2 id="types-for-agents">Types for agents</h2>
 <p>We are getting towards our goal of putting everything together to make a model of people moving around and interacting with one another. Most people start off susceptible, but when an infectious person meets a susceptible the infection is transmitted with a certain probability.</p>
 <p>We will make an individual-based model, also called an agent-based model. We need a struct called Agent that contains whatever information an agent needs. In our case we will need a position and an infection status.</p>
@@ -906,7 +906,112 @@ end
 
 <h2 id="dynamics">Dynamics</h2>
 <p>Now we just need to simulate the dynamics of the system. We will consider parameters $p_l$ and $p_R$, the probabilities of infection and recovery at each time step, respectively.
-This part will be posted in Part 2.</p>
+The system evolves as follows:</p>
+<ul>
+<li>First the system is initialized with only one random infected agent.</li>
+<li>Secondly, a single agent choosen randomly, call it $i$ tries to move to an adjancent position. If the position <strong>is</strong> ocuppied, by agent $j$, then <em>neither</em> of them move, but they interact as follows:</li>
+<li>If agent $i$ is infected and agent $j$ is susceptible then agent $j$ gets infected with probability $p_I$</li>
+<li>If agent $i$ is infected, it recovers with probability $p_R$.</li>
+</ul>
+<p>We do this part defining <code>step()</code> function</p>
+<p>Notice that this model does not allow a recovered agent to get infected again.</p>
+<p>Then the step! function looks as follows:</p>
+<pre><code class="language-julia">&quot;Receives a vector of agents and the required probabilities,
+returns a modified agent vector&quot;
+function step!(v, pI, pR)
+    n = length(v)
+    i = rand(1:n)
+    cwi = move(v[i].cw) # we move agent i 
+    index = check_ocupied2(cwi.w,v) # Give us [] or the index j of agent
+    m = length(index) # can be 0 or 1
+    if m == 0
+        v[i] = Agent(cwi, v[i].status)
+    else
+        for j in index
+            v[i],v[j] = infection(v[i],v[j], pI, pR)
+        end
+    end
+    return v
+end
+</code></pre>
+<p><code>Infection()</code> function makes the interaction between the agents $i$ and $j$ following the previous rules.</p>
+<p>Let&rsquo;s see how the system evolves after $1000$ steps. For this we will use $L = 6$ , $N = 30$, $p_I = 0.5$ and $p_R = 0.05$.
+Orange means infected, Blue is susceptible and Green is recovered.</p>
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+<figure id="figure-system-evolution">
+
+
+  <a data-fancybox="" href="/img/post/evolution-1000-0.5-0.05.gif" data-caption="System Evolution">
+
+
+  <img src="/img/post/evolution-1000-0.5-0.05.gif" alt=""  >
+</a>
+
+
+  
+  
+  <figcaption>
+    System Evolution
+  </figcaption>
+
+
+</figure>
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+<figure id="figure-sir">
+
+
+  <a data-fancybox="" href="/img/post/SIR.svg" data-caption="SIR">
+
+
+  <img src="/img/post/SIR.svg" alt=""  >
+</a>
+
+
+  
+  
+  <figcaption>
+    SIR
+  </figcaption>
+
+
+</figure>
+
+<h3 id="final-thoughts">Final thoughts</h3>
+<p>This workshop and to be honest most of JuliaCon 2020 workshops were amazing, as you can learn so much. There is a known saying about Mathematicians being able to code and solve problems at the cost of doing a really long, slow and bad algorithm. Going to this workshops and trying to learn as much Julia as possible during JuliaCon is making me improve a lot in terms of coding and knowing the capabilities of the language, so I recomend checking the workshops videos on 
+<a href="https://www.youtube.com/c/TheJuliaLanguage" target="_blank" rel="noopener">youtube</a></p>
 
     </div>
 
@@ -937,7 +1042,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=https://danpereda.github.io/post/test/&amp;text=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=https://danpereda.github.io/post/test/&amp;text=Learn%20Julia%20via%20epidemic%20modelling" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -950,7 +1055,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=https://danpereda.github.io/post/test/&amp;t=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-facebook">
+        <a href="https://www.facebook.com/sharer.php?u=https://danpereda.github.io/post/test/&amp;t=Learn%20Julia%20via%20epidemic%20modelling" target="_blank" rel="noopener" class="share-btn-facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -963,7 +1068,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="mailto:?subject=Learn%20Julia%20via%20epidemic%20modelling%20Part%201&amp;body=https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-email">
+        <a href="mailto:?subject=Learn%20Julia%20via%20epidemic%20modelling&amp;body=https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-email">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -976,7 +1081,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -989,7 +1094,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="https://web.whatsapp.com/send?text=Learn%20Julia%20via%20epidemic%20modelling%20Part%201%20https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+        <a href="https://web.whatsapp.com/send?text=Learn%20Julia%20via%20epidemic%20modelling%20https://danpereda.github.io/post/test/" target="_blank" rel="noopener" class="share-btn-whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -1002,7 +1107,7 @@ This part will be posted in Part 2.</p>
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling%20Part%201" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=https://danpereda.github.io/post/test/&amp;title=Learn%20Julia%20via%20epidemic%20modelling" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
