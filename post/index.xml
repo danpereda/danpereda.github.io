@@ -39,10 +39,21 @@
 &lt;li&gt;Bayesian optimization&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
-&lt;li&gt;Neural Ordinary Differential Equations&lt;/li&gt;
+&lt;li&gt;Neural Ordinary Differential Equations with &lt;code&gt;sciml_train&lt;/code&gt;
+&lt;ul&gt;
+&lt;li&gt;Solving for the Lokta - Volterra model with few data.&lt;/li&gt;
+&lt;li&gt;Universal ODEs learn and extrapolate other dynamical behaviors&lt;/li&gt;
+&lt;li&gt;Transforming a neural network fit into equations in sparsified from using SInDy&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;Solving differential equations with neural networks (physics-informed neural networks)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Solving differential equations with neural networks (physics-informed neural networks)
+&lt;ul&gt;
+&lt;li&gt;Toy example&lt;/li&gt;
+&lt;li&gt;Solving a 100 Dimensional Hamilton-Jacobi-Bellman Equation&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h1 id=&#34;modeling-with-differential-equations&#34;&gt;Modeling with Differential Equations&lt;/h1&gt;
 &lt;h2 id=&#34;differential-equations&#34;&gt;Differential Equations&lt;/h2&gt;
@@ -467,7 +478,520 @@ DiffEqFlux.sciml_train(loss, res.minimizer,
 &lt;a href=&#34;https://diffeq.sciml.ai/stable/analysis/sensitivity/#Sensitivity-Algorithms-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;see DifferentialEquations.jl&lt;/a&gt; documentation on &lt;code&gt;Sensitivity Algorithms&lt;/code&gt; for this matter.&lt;/p&gt;
 &lt;p&gt;
 &lt;a href=&#34;https://diffeqflux.sciml.ai/dev/examples/neural_ode_sciml/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here&lt;/a&gt; to check more about Neural ODE on the SciML ecosystem.&lt;/p&gt;
-&lt;h1 id=&#34;physics-informed-neural-networks&#34;&gt;Physics-informed neural networks&lt;/h1&gt;
+&lt;h2 id=&#34;universal-odes-learn-and-extrapolate-other-dynamical-behaviors&#34;&gt;Universal ODEs learn and extrapolate other dynamical behaviors&lt;/h2&gt;
+&lt;p&gt;Truth equation:&lt;/p&gt;
+&lt;p&gt;$$ \dot{x} = \alpha x - \beta xy$$
+$$ \dot{y} = \gamma xy - \delta y$$&lt;/p&gt;
+&lt;p&gt;Partially-known neural embedded equations&lt;/p&gt;
+&lt;p&gt;$$ \dot{x} = \alpha x - U_1(x,y)$$
+$$ \dot{y} = -\delta y + U_2(x,y)$$&lt;/p&gt;
+&lt;p&gt;Automatically recover the long-term behaviour from less than half of a period in a cyclick time series!&lt;/p&gt;
+&lt;p&gt;Turn neural networks back intro equations with &lt;code&gt;SInDy&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s define the experimental parameter for the Lokta - Volterra equation.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;tspan = (0.0f0,3.0f0)
+u0 = Float32[0.44249296,4.6280594]
+p_ = Float32[1.3, 0.9, 0.8, 1.8]
+prob = ODEProblem(lotka, u0,tspan, p_)
+solution = solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat = 0.1)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-few-data&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/SmallData.svg&#34; data-caption=&#34;Few data&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/SmallData.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Few data
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Then we add noise to the data so that we do not overfit.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;X = Array(solution)
+Xₙ = X + Float32(1e-3)*randn(eltype(X), size(X))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Define the neueral network which learns $L(x, y, y(t-\tau))$. Actually, we do not care about overfitting right now, since we want to extract the derivative information without numerical differentiation.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;L = FastChain(FastDense(2, 32, tanh),FastDense(32, 32, tanh), FastDense(32, 2))
+p = initial_params(L)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let&amp;rsquo;s define now the neural network given by:&lt;/p&gt;
+&lt;p&gt;$$ \dot{x} = \alpha x - U_1(x,y)$$
+$$ \dot{y} = -\delta y + U_2(x,y)$$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;function dudt_(u, p,t)
+    x, y = u
+    z = L(u,p)
+    [p_[1]*x + z[1],
+    -p_[4]*y + z[2]]
+end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;So then when we solve&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;prob_nn = ODEProblem(dudt_,u0, tspan, p)
+sol_nn = concrete_solve(prob_nn, Tsit5(), u0, p, saveat = solution.t)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The thick curves represent the real solution, as we see, we get a decent predictor for only the first second, afterwards the prediction for $u_1(t)$ its pretty bad, while the prediction for $u_2(t)$ it&amp;rsquo;s ok.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-bad-predictor&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/Badpredictor.svg&#34; data-caption=&#34;Bad predictor&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/Badpredictor.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Bad predictor
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Let&amp;rsquo;s improve now. For this we will do as before, we perfom a prediction and then compute a &lt;code&gt;loss&lt;/code&gt; function on the prediction to check how well are we fitting the data. Finally we create a &lt;code&gt;Callback&lt;/code&gt; that saves the losses each $50$ iterations.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;function predict(θ)
+    Array(concrete_solve(prob_nn, Vern7(), u0, θ, saveat = solution.t,
+                         abstol=1e-6, reltol=1e-6,
+                         sensealg = InterpolatingAdjoint(autojacvec=ReverseDiffVJP())))
+end
+
+function loss(θ)
+    pred = predict(θ)
+    sum(abs2, Xₙ .- pred), pred 
+end
+
+const losses = []
+callback(θ,l,pred) = begin
+    push!(losses, l)
+    if length(losses)%50==0
+        println(&amp;quot;Current loss after $(length(losses)) iterations: $(losses[end])&amp;quot;)
+    end
+    false
+end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;First train with &lt;code&gt;ADAM&lt;/code&gt; for better convergence adn then train with &lt;code&gt;BFGS&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;res1 = DiffEqFlux.sciml_train(loss, p, ADAM(0.01), cb=callback, maxiters = 200)
+res2 = DiffEqFlux.sciml_train(loss, res1.minimizer, BFGS(initial_stepnorm=0.01), 
+                                                    cb=callback, 
+                                                    maxiters = 10000)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-losses&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/losses.svg&#34; data-caption=&#34;losses&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/losses.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    losses
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Final training loss after $482$ iterations is  $2.74 \times 10^{-4}$ and the approximation fits the real solution really well.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-real-solution-vs-approximation&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/fitting.svg&#34; data-caption=&#34;Real solution vs Approximation&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/fitting.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Real solution vs Approximation
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Notice that we purposely made the real solution curve thicker so that its easier to see, otherwise both curves are superposed.&lt;/p&gt;
+&lt;p&gt;We can also check the derivatives.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;DX = Array(solution(solution.t, Val{1}))
+prob_nn2 = ODEProblem(dudt_,u0, tspan, res2.minimizer)
+_sol = solve(prob_nn2, Tsit5())
+DX_ = Array(_sol(solution.t, Val{1}))
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-derivatives&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/derivatives.svg&#34; data-caption=&#34;Derivatives&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/derivatives.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Derivatives
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Finally, we know that the real functions are $\beta xy$ and $\gamma xy$. Lets check the error plot.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;# Ideal data
+L̄ = [-p_[2]*(X[1,:].*X[2,:])&#39;;p_[3]*(X[1,:].*X[2,:])&#39;]
+# Neural network guess
+L̂ = L(Xₙ,res2.minimizer)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-real-solution-vs-approximation&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/error.svg&#34; data-caption=&#34;Real solution vs Approximation&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/error.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Real solution vs Approximation
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;transforming-a-neural-network-fit-into-equations-in-sparsified-from-using-sindy&#34;&gt;Transforming a neural network fit into equations in sparsified from using SInDy&lt;/h2&gt;
+&lt;p&gt;Now we want to use this nice fit and transformed back into equations. For this porpuse we&amp;rsquo;ll use &lt;code&gt;ModelingToolkit.jl&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;We will let the model know that we have $2$ variables and then create a basis that can approximate this functions by linear combinations of $sin(u_1)$ , $cos(u_1)$, $sin(u_2)$, $cos(u_2)$, $constant$, $u_1(t)^k$, $u_2(t)^k$ and $u_1(t)^k * u_2(t)^{5-k}$ with $k = 1&amp;hellip;5$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;@variables u[1:2]
+# Lots of polynomials
+polys = Operation[1]
+for i ∈ 1:5
+    push!(polys, u[1]^i)
+    push!(polys, u[2]^i)
+    for j ∈ i:5
+        if i != j
+            push!(polys, (u[1]^i)*(u[2]^j))
+            push!(polys, u[2]^i*u[1]^i)
+        end
+    end
+end
+# And some other stuff
+h = [cos.(u)...; sin.(u)...; polys...]
+basis = Basis(h, u)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we will create an optimizer for the SINDY problem 
+&lt;a href=&#34;https://datadriven.sciml.ai/dev/sparse_identification/sindy/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check more about Sparse Identification of Nonlinear Dynamics&lt;/a&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;# Create an optimizer for the SINDY problem
+opt = SR3()
+# Create the thresholds which should be used in the search process
+λ = exp10.(-7:0.1:3)
+# Target function to choose the results from; x = L0 of coefficients and L2-Error of the model
+f_target(x, w) = iszero(x[1]) ? Inf : norm(w.*x, 2)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let&amp;rsquo;s see what happens if we want to use pure SINDY, meaning we have no pior information, only the data generated by our neural network,i.e, we took the values of the differential equation through the time series, we run it on the neural network giving us the output $\hat{L}$ and the $X$ is the input of the neural network, then we make SINDY transform this data into a system of equations using the basis.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;Ψ = SInDy(Xₙ[:, :], DX[:, :], basis, λ, opt = opt, maxiter = 10000,
+                                                f_target = f_target)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As a result we get : $$du_1 = \beta sin(u_1) + \alpha cos(u_2) + \gamma u_1^2$$
+$$du_2 = \delta u_2 $$&lt;/p&gt;
+&lt;p&gt;i.e, we failed, but remember that we didn&amp;rsquo;t use any pior information.&lt;/p&gt;
+&lt;p&gt;Test on ideal derivative data for unknown function (not available).&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;Ψ = SInDy(Xₙ[:, 5:end], L̄[:, 5:end], basis, λ, opt = opt, maxiter = 10000,
+                                                        f_target = f_target)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This time we succeded as we recovered the missing terms of each equation.&lt;/p&gt;
+&lt;p&gt;$$du_1 = \beta u_1u_2 $$
+$$du_2 = \gamma u_1u_2 $$&lt;/p&gt;
+&lt;p&gt;And we also succeded using derivative data.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;# Test on uode derivative data
+println(&amp;quot;SINDY on learned, partial, available data&amp;quot;)
+Ψ = SInDy(Xₙ[:, 2:end], L̂[:, 2:end], basis, λ,  opt = opt, maxiter = 10000, 
+                                                        normalize = true, 
+                                                        denoise = true, 
+                                                        f_target = f_target)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we can extract the parameters.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;p̂ = parameters(Ψ)
+println(&amp;quot;First parameter guess : $(p̂)&amp;quot;)
+unknown_sys = ODESystem(Ψ)
+unknown_eq = ODEFunction(unknown_sys)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The equations are recovered, but the parameters may not be the best, we can start another sindy run to get closer to the ground truth.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;# Just the equations
+b = Basis((u, p, t)-&amp;gt;unknown_eq(u, [1.; 1.], t), u)
+# Retune for better parameters -&amp;gt; we could also use DiffEqFlux or other parameter estimation tools here.
+Ψf = SInDy(Xₙ[:, 2:end], L̂[:, 2:end], b, opt = STRRidge(0.01), maxiter = 100, convergence_error = 1e-18) # Succeed
+println(Ψf)
+p̂ = parameters(Ψf)
+println(&amp;quot;Second parameter guess : $(p̂)&amp;quot;)
+# Create function
+recovered_sys = ODESystem(Ψf)
+recovered_eq = ODEFunction(recovered_sys)
+# Build a ODE for the estimated system
+function dudt(du, u, p, t)
+    # Add SInDy Term
+    α, δ, β, γ = p
+    z = recovered_eq(u, [β; γ], t)
+    du[1] = α*u[1] + z[1]
+    du[2] = -δ*u[2] + z[2]
+end
+# Create the approximated problem and solution
+ps = [p_[[1,4]]; p̂]
+approximate_prob = ODEProblem(dudt, u0, tspan, ps)
+approximate_solution = solve(approximate_prob, Tsit5(), saveat = 0.01)
+# Look at long term prediction
+t_long = (0.0, 50.0)
+approximate_prob = ODEProblem(dudt, u0, t_long, ps)
+approximate_solution_long = solve(approximate_prob, Tsit5(), saveat = 0.1) # Using higher tolerances here results in exit of julia
+true_prob = ODEProblem(lotka, u0, t_long, p_)
+true_solution_long = solve(true_prob, Tsit5(), saveat = approximate_solution_long.t)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Why are neural networks so good? because for large enough neural network, local optima are global optima.&lt;/p&gt;
+&lt;p&gt;
+&lt;a href=&#34;https://github.com/ChrisRackauckas/universal_differential_equations&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here to see more about Universal differential equations&lt;/a&gt;&lt;/p&gt;
+&lt;h1 id=&#34;physics-informed-neural-networks&#34;&gt;Physics-Informed Neural Networks&lt;/h1&gt;
+&lt;h2 id=&#34;solve-and-ode-with-a-neural-network&#34;&gt;Solve and ODE with a neural network&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Let $u&amp;rsquo; = f(u,t)$ with $u(0) = u_0$. We want to build a neural network $NN(t)$ that is the solution to this differential equation.&lt;/li&gt;
+&lt;li&gt;By definition then, we must have that $NN&amp;rsquo;(t) = f(NN(t),t)$ and $NN(0) = u_0$.&lt;/li&gt;
+&lt;li&gt;Define $\mathcal{C}(\theta) = \displaystyle \sum_{t} \lVert NN&amp;rsquo;(t) - f(NN(t),t) \rVert$ for $\theta$ the parameters of the ODE.
+&lt;ul&gt;
+&lt;li&gt;Then this cost is zero when $NN(t)$ is the solution to the ODE&lt;/li&gt;
+&lt;li&gt;Therefore we aim to minimize this loss to get the solution.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Extra trick: We can use $g(t) = tNN(t) + u_0$ as a test function instead of $NN(t)$. Notice that it is an approximator that always satisfies the boundary condition.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;example&#34;&gt;Example&lt;/h3&gt;
+&lt;p&gt;Let&amp;rsquo;s solve the ODE: $$u&amp;rsquo;(t) = cos(2\pi t) = f(u,t)$$ with initial condition $$u(0) = 1$$&lt;/p&gt;
+&lt;p&gt;Following the steps above, we create a neural network, a function $g(t)$ which we derivate and compute the $l_2$ norm of the difference between $g&amp;rsquo;(t)$ and $u&amp;rsquo;(t)$. In order to do this, we define $\epsilon$ as small as the precision of a &lt;em&gt;Float32&lt;/em&gt; allow us.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using Flux
+NNODE = Chain( x -&amp;gt; [x],
+            Dense(1,32,tanh),
+            Dense(32,1),
+            first)
+NNODE(1.0)
+g(t) = t*NNODE(t) + 1f0
+
+using Statistics
+ϵ = sqrt(eps(Float32))
+loss() = mean(abs2( ( ( g(t+ϵ) - g(t) )/ϵ ) - cos(2π*t) ) for t in 0f0:0.01f0:1f0)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We create a callback and train the neural network using a descent algorithm.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;iter = 0
+cb = function()
+    global iter += 1
+    if iter % 500 == 0
+        display( loss() )
+    end
+end
+opt = Flux.Descent(0.01) 
+data = Iterators.repeated( (), 5000 )
+Flux.train!(loss, Flux.params(NNODE), data, opt; cb= cb)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we can compare to the real solution:&lt;/p&gt;
+&lt;p&gt;$$ u(t) = \int u&amp;rsquo;(t) dt = \int cos(2\pi t)dt = \dfrac{sin(2\pi t)}{2\pi} + constant$$&lt;/p&gt;
+&lt;p&gt;but $u(0) = 1$ therefore we get $u(t) = 1 + \dfrac{sin(2\pi t)}{2\pi}$&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-true-solution-vs-neural-network&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/PINN.svg&#34; data-caption=&#34;True Solution vs Neural Network&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/PINN.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    True Solution vs Neural Network
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Why Physics- Informed Neural Networks?&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;$\mathcal{C}(\theta) = C_{pde}(\theta) + C_{boundary} + C_{data}(\theta)$ can nudge a model towards data.
+&lt;ul&gt;
+&lt;li&gt;Equivalent to regularizing the neural network by a scientific equation&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Can train fast continuous surrogates by making the neural netowrk parameter dependent.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;example-solving-a-100-dimensional-hamilton-jacobi-bellman-equation&#34;&gt;Example: Solving a 100 Dimensional Hamilton-Jacobi-Bellman Equation&lt;/h3&gt;
+&lt;p&gt;For this problem we will use &lt;code&gt;NeuralPDE.jl&lt;/code&gt; (
+&lt;a href=&#34;https://github.com/SciML/NeuralPDE.jl&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check more here&lt;/a&gt;). Following this steps:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Write the function and equation.&lt;/li&gt;
+&lt;li&gt;Make $\sigma^\top \nabla u (t,X)$ a neural network.&lt;/li&gt;
+&lt;li&gt;Solve the resulting SDEs and learn $\sigma^\top \nabla u$ via:
+  &lt;!-- $$l(\theta) = \displaystyle \mathbb{E} \left[ | g(X_{t_N}) - \hat{u}(\{ X_{t_n}{_{0 \le n \le N}}\} , \{ W_{t_n}_{0 \le n \le N}\} )|^2 \right] $$ --&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using NeuralPDE
+using Flux
+using DifferentialEquations
+using LinearAlgebra
+d = 100 # number of dimensions
+X0 = fill(0.0f0, d) # initial value of stochastic control process
+tspan = (0.0f0, 1.0f0)
+λ = 1.0f0
+
+g(X) = log(0.5f0 + 0.5f0 * sum(X.^2))
+f(X,u,σᵀ∇u,p,t) = -λ * sum(σᵀ∇u.^2)
+μ_f(X,p,t) = zero(X)  # Vector d x 1 λ
+σ_f(X,p,t) = Diagonal(sqrt(2.0f0) * ones(Float32, d)) # Matrix d x d
+prob = TerminalPDEProblem(g, f, μ_f, σ_f, X0, tspan)
+hls = 10 + d # hidden layer size
+opt = Flux.ADAM(0.01)  # optimizer
+# sub-neural network approximating solutions at the desired point
+u0 = Flux.Chain(Dense(d, hls, relu),
+                Dense(hls, hls, relu),
+                Dense(hls, 1))
+# sub-neural network approximating the spatial gradients at time point
+σᵀ∇u = Flux.Chain(Dense(d + 1, hls, relu),
+                  Dense(hls, hls, relu),
+                  Dense(hls, hls, relu),
+                  Dense(hls, d))
+pdealg = NNPDENS(u0, σᵀ∇u, opt=opt)
+@time ans = solve(prob, pdealg, verbose=true, maxiters=100, trajectories=100,
+                            alg=EM(), dt=1.2, pabstol=1f-2)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can solve this high dimensional problem in only $22.623969$ seconds $523.95 M$ allocations: $36.683 GiB$, $17.95%$ gc time.&lt;/p&gt;
 </description>
     </item>
     
