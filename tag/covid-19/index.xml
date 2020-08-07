@@ -22,6 +22,17 @@
 &lt;p&gt;We will &lt;strong&gt;simulate&lt;/strong&gt; the &lt;strong&gt;dynamics&lt;/strong&gt; of an epidemic, i.e, an outbreak of an infectious disease. In a population of people with &lt;strong&gt;N&lt;/strong&gt; individuals we will be interested in how the number of susceptible (&lt;strong&gt;S&lt;/strong&gt;),
 infectious (&lt;strong&gt;I&lt;/strong&gt;) and recovered (&lt;strong&gt;R&lt;/strong&gt;) individual changes over time. We will begin by looking at simple models that take into account only total numbers of people, by the end of the workshop we should be able to structure a more complicated &lt;strong&gt;individual - based&lt;/strong&gt; or &lt;strong&gt;agent - based&lt;/strong&gt; simulation, where we model individual people moving around space and interacting with one another.&lt;/p&gt;
 &lt;p&gt;For Simplicity, those individuals will be modelled as &lt;strong&gt;random walks&lt;/strong&gt; on a grid, i.e, points that choose a neighbouring grid point at random to jump to.&lt;/p&gt;
+&lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Generic programming&lt;/li&gt;
+&lt;li&gt;Composite types&lt;/li&gt;
+&lt;li&gt;(Outer) constructors&lt;/li&gt;
+&lt;li&gt;Generic programming with Types&lt;/li&gt;
+&lt;li&gt;Types for agents&lt;/li&gt;
+&lt;li&gt;Composition and Parametrised Types&lt;/li&gt;
+&lt;li&gt;Spatial SIR model&lt;/li&gt;
+&lt;li&gt;Dynamics&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h2 id=&#34;generic-programming-random-walks&#34;&gt;Generic programming: Random walks&lt;/h2&gt;
 &lt;p&gt;Each step roughly corresponds to a different function. Each different type of walker will need a different way to:&lt;/p&gt;
 &lt;ul&gt;

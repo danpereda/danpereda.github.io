@@ -17,7 +17,458 @@
       <link>https://danpereda.github.io/post/scientificmachinelearning/</link>
       <pubDate>Fri, 31 Jul 2020 02:56:27 -0400</pubDate>
       <guid>https://danpereda.github.io/post/scientificmachinelearning/</guid>
-      <description></description>
+      <description>&lt;p&gt;Here is what I&amp;rsquo;ve learned from the WorkShop 
+&lt;a href=&#34;https://www.youtube.com/watch?v=QwVO0Xh2Hbg&amp;amp;list=LL&amp;amp;index=6&amp;amp;t=10515s&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Doing Scientific Machine Learning (SciML) With Julia&lt;/a&gt; from Chris Rackauckas. There is also an 
+&lt;a href=&#34;https://github.com/mitmath/18337&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MIT course&lt;/a&gt; and 
+&lt;a href=&#34;https://tutorials.sciml.ai/html/exercises/01-workshop_exercises.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Workshop exercises&lt;/a&gt; (with solutions) by the same author about this subject that I&amp;rsquo;ve been checking out and strongly recomend.&lt;/p&gt;
+&lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Modeling with Differential Equations
+&lt;ul&gt;
+&lt;li&gt;Differential Equations&lt;/li&gt;
+&lt;li&gt;Stochastic Differential Equations&lt;/li&gt;
+&lt;li&gt;Delayed Differential Equations&lt;/li&gt;
+&lt;li&gt;Callbacks&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Automated model discovery via universal differential equations
+&lt;ul&gt;
+&lt;li&gt;Parameter inference on differential equations
+&lt;ol&gt;
+&lt;li&gt;Local and global optimization&lt;/li&gt;
+&lt;li&gt;Bayesian optimization&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;li&gt;Neural Ordinary Differential Equations&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Solving differential equations with neural networks (physics-informed neural networks)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;modeling-with-differential-equations&#34;&gt;Modeling with Differential Equations&lt;/h1&gt;
+&lt;h2 id=&#34;differential-equations&#34;&gt;Differential Equations&lt;/h2&gt;
+&lt;p&gt;First we will see how to define a differential Equation on Julia, for this we will use the Latka Volterra equation that modelates a population of rabbits and wolves.&lt;/p&gt;
+&lt;p&gt;$$ \dfrac{dx}{dt} = \alpha x - \beta xy$$
+$$ \dfrac{dy}{dt} = \delta xy - \gamma y$$&lt;/p&gt;
+&lt;p&gt;Something that may be silly but I find really nice is that you can write special caracters like 🐰, 🐺, α, β, γ and δ.&lt;/p&gt;
+&lt;p&gt;We just need to charge the package &lt;code&gt;DifferentialEquations.jl&lt;/code&gt; and write our differential equation as a function.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using DifferentialEquations
+function lakta_volterra!(du,u,p,t)
+    🐰,🐺 = u
+    α,β,γ,δ = p
+    du[1] = d🐰 = α*🐰 - β*🐰*🐺
+    du[2] = d🐺 = γ*🐰*🐺 - δ*🐺
+end
+u₀ = [1.0,1.0]
+tspan = (0.0, 10.0)
+p = [1.5,1.0,3.0,1.0]
+prob = ODEProblem(lakta_volterra!,u₀,tspan,p)
+sol = solve(prob)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-lakta--volterra-solution&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/LaktaVolterra.svg&#34; data-caption=&#34;Lakta- Volterra Solution&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/LaktaVolterra.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Lakta- Volterra Solution
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-rabbit-vs-wolves&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/ConejoLobo.svg&#34; data-caption=&#34;Rabbit vs Wolves&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/ConejoLobo.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Rabbit vs Wolves
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Easy optimizations can be made, we can choose a better solver for the problem, stop saving everystep, etc.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using Sundials # Charge CVODE_BDF() solver
+sol = solve(prob, CVODE_BDF(), save_everystep=false, abstol=1e-8, reltol=1e-8)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can also change the parameters by using the remake function.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;remake(prob, p =[1.2,0.8,2.5,0.8])
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;stochastic-differential-equation&#34;&gt;Stochastic Differential Equation&lt;/h2&gt;
+&lt;p&gt;Now we have a multiplicative noise, given by the terms $\sigma_i x_i dW_i$ where $dW_i$ is a random number whos standard deviation is $dt$.
+$$ dx = (\alpha x - \beta xy)dt + \sigma_1 x dW_1 $$
+$$ dy = (\delta xy - \gamma y)dt + \sigma_2 y dW_2$$&lt;/p&gt;
+&lt;p&gt;In julia we just need create the multiplicative noise function and added to the previous problem by using &lt;code&gt;SDEProblem&lt;/code&gt; instead of &lt;code&gt;ODEProblem&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;function multiplicative_noise!(du,u,p,t)
+    🐰,🐺 = u
+    du[1] = 0.3*🐰
+    du[2] = 0.3*🐺
+end
+prob = SDEProblem(lakta_volterra!,multiplicative_noise!,u₀,tspan,p)
+sol = solve(prob)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Solving only once would not be the best, since we have a randomness, thus we made use of another set of functions already implemented in &lt;code&gt;DifferentialEquations.jl&lt;/code&gt; called &lt;code&gt;Ensemble&lt;/code&gt;. Firstly we ensemble the problem, secondly we solve for a given number of trajectories (aditonal parameters like EnsembleThreads can be written in order to parelalize the problem and get aditional performance) and finally we do a summary of what happened.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;ensembleprob = EnsembleProblem(prob)
+sol = solve(ensembleprob, SOSRI(), EnsembleThreads(), trajectories=1000)
+summ = EnsembleSummary(sol)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-simple-summary&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/Summary.svg&#34; data-caption=&#34;Simple Summary&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/Summary.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Simple Summary
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;
+&lt;a href=&#34;https://diffeq.sciml.ai/stable/features/ensemble/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here&lt;/a&gt; to see more about Ensemble&lt;/p&gt;
+&lt;h2 id=&#34;delayed-differential-equations&#34;&gt;Delayed Differential Equations&lt;/h2&gt;
+&lt;p&gt;The amount of growth happening at time $t$ is not due to the amount of rabbits at time $t$&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-delayed-differential-equation&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/Lag.svg&#34; data-caption=&#34;Delayed Differential Equation&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/Lag.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Delayed Differential Equation
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;population-control&#34;&gt;Population Control&lt;/h2&gt;
+&lt;p&gt;Example, whenever the amount of wolves is equal to $3$ then we are allow to kill one. The &lt;strong&gt;key&lt;/strong&gt; feature to do this &lt;code&gt;Callbacks&lt;/code&gt;. So whenever a condition happens, then it affects the dynamics.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;🔥🐺_condition(u,t,integrator) = u[2] - 3
+🔥🐺_affect!(integrator) = integrator.u[2] -=1
+🔥🐺_cb = ContinuousCallback(🔥🐺_condition,🔥🐺_affect!)
+sol = solve(prob, callback = 🔥🐺_cb)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-population-control&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/PopulationControl.svg&#34; data-caption=&#34;Population Control&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/PopulationControl.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Population Control
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Of course this is not the most realistic model, since we don&amp;rsquo;t instanstly kill a wolf each time.&lt;/p&gt;
+&lt;h1 id=&#34;automated-model-discovery-via-universal-differential-equations&#34;&gt;Automated model discovery via universal differential equations&lt;/h1&gt;
+&lt;h2 id=&#34;parameter-inference-on-differential-equations&#34;&gt;Parameter inference on differential equations&lt;/h2&gt;
+&lt;p&gt;Our goal will be to find parameters that make the Lotka-Volterra solution the one we had on the first part, so we define our loss as the squared distance from our the real solution &lt;code&gt;dataset = Array(sol)&lt;/code&gt; with parameters $p$ given by $\alpha = 1.5$, $\beta = 1.0$, $\gamma = 3.0$ and $\delta = 1.0$. Note that when using &lt;code&gt;sciml_train&lt;/code&gt;, the first return is the loss value, and the other returns are sent to the callback for monitoring convergence.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;function loss(p)
+    tmp_prob = remake(prob, p = p)
+    tmp_sol = solve(tmp_prob, saveat = 0.1)
+    sum(abs2, Array(tmp_sol) - dataset), tmp_sol
+end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Lastly, we use the sciml_train function to train the parameters using BFGS to arrive at parameters which optimize for our goal.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using DiffEqFlux
+using Optim
+pinit = [1.2,0.8,2.5,0.8]
+res  = DiffEqFlux.sciml_train(loss, pinit, BFGS(), maxiters = 100)
+p_final = res.minimizer
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;sciml_train&lt;/code&gt; allows defining a callback that will be called at each step of our training loop. It takes in the current parameter vector and the returns of the last call to the loss function. We will display the current loss and make a plot of the current situation.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using Flux
+function plot_callback(p,l,tmp_sol)
+    tmp_prob = remake(prob, p = p)
+    tmp_sol = solve(tmp_prob, saveat = 0.1)
+    fig = plot(tmp_sol)
+    scatter!(fig, sol.t,dataset&#39;)
+    display(fig)
+    false
+end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let&amp;rsquo;s optimize the model and get a nice animation of what is happening in each iteration:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;res  = DiffEqFlux.sciml_train(loss, pinit, BFGS(), cb = plot_callback, maxiters=300)
+p_final = res.minimizer
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In just $1.745$ seconds and $8658251$ allocations: 361.20 MiB (counting plots) we get a loss function of $2.401364 \times 10^{-23}$ and parameters:
+$$\alpha =  1.5000000000009583 \approx 1.5$$
+$$\beta = 1.0000000000008002 \approx 1.0$$
+$$\gamma =  3.0000000000005405 \approx 3.0$$ 
+$$\delta = 0.9999999999995174 \approx 1.0$$&lt;/p&gt;
+&lt;p&gt;
+&lt;a href=&#34;https://diffeqflux.sciml.ai/dev/examples/optimization_ode/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here&lt;/a&gt; to see more&lt;/p&gt;
+&lt;p&gt;Notice that the election of &lt;code&gt;BFGS&lt;/code&gt; makes us converge quickier than using &lt;code&gt;ADAM&lt;/code&gt; (try this yourself). Usually &lt;code&gt;ADAM&lt;/code&gt; its pretty good for the first iterations to get local optima but then its better to change to &lt;code&gt;BFGS&lt;/code&gt; to do the final steps. Otherwise we can use &lt;code&gt;BlackBoxOptim&lt;/code&gt; to get global optima algorithms.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using BlackBoxOptim
+res  = DiffEqFlux.sciml_train(loss, pinit, 
+                                    DiffEqFlux.BBO(), 
+                                    cb = plot_callback,
+                                    lower_bounds= 0.5ones(4),
+                                    upper_bounds=4.0ones(4) )
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;After $48690$ steps we get best candidate found: $[1.5, 1.0, 3.0, 1.0]$&lt;/p&gt;
+&lt;h2 id=&#34;bayesian-inference&#34;&gt;Bayesian Inference&lt;/h2&gt;
+&lt;p&gt;In this section we will use &lt;code&gt;Turing.jl&lt;/code&gt; together with the documentation 
+&lt;a href=&#34;https://turing.ml/dev/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here to see more&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Most of the scientific community deals with the basic problem of trying to mathematically model the reality around them and this often involves dynamical systems. The general trend to model these complex dynamical systems is through the use of differential equations. Differential equation models often have non-measurable parameters. The popular “forward-problem” of simulation consists of solving the differential equations for a given set of parameters, the “inverse problem” to simulation, known as parameter estimation, is the process of utilizing data to determine these model parameters. Bayesian inference provides a robust approach to parameter estimation with quantified uncertainty.&lt;/p&gt;
+&lt;p&gt;First we set up all the packages that will be use together with a fix seed for reproducibility of the results.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using Turing, Distributions, DataFrames, DifferentialEquations, DiffEqSensitivity
+
+# Import MCMCChain, Plots, and StatsPlots for visualizations and diagnostics.
+using MCMCChains, Plots, StatsPlots
+
+# Set a seed for reproducibility.
+using Random
+Random.seed!(12);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We will keep using the same Lotka-Volerra equation and we’ll generate the data to use for the parameter estimation from simulation.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;odedata = Array(solve(prob,Tsit5(),saveat=0.1))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Turing and DifferentialEquations are completely composable and you can write of the differential equation inside a Turing &lt;code&gt;@model&lt;/code&gt; and it will just work.&lt;/p&gt;
+&lt;p&gt;We can rewrite the Lotka Volterra parameter estimation problem with a Turing &lt;code&gt;@model&lt;/code&gt; interface as below&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;Turing.setadbackend(:forward_diff) #Small Model
+@model function fitlv(data)
+    σ ~ InverseGamma(2, 3)
+    α ~ truncated(Normal(1.5,0.5),0.5,2.5)
+    β ~ truncated(Normal(1.2,0.5),0,2)
+    γ ~ truncated(Normal(3.0,0.5),1,4)
+    δ ~ truncated(Normal(1.0,0.5),0,2)
+
+    p = [α,β,γ,δ]
+    prob = ODEProblem(lokta_volterra!,u₀,tspan,p)
+    predicted = solve(prob,Tsit5(),saveat=0.1)
+
+    for i = 1:length(predicted)
+        data[:,i] ~ MvNormal(predicted[i], σ) #Maximum Likehood Estimation
+    end
+end
+model = fitlv(odedata)
+chain = sample(model, NUTS(.65),10000)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We just give our prior distribution and solve the dynamics to calcule our predictions and then compare it with the data in a maximum likehood estimation.&lt;/p&gt;
+&lt;h2 id=&#34;neural-ordinary-differential-equations-with-sciml_train&#34;&gt;Neural Ordinary Differential Equations with sciml_train&lt;/h2&gt;
+&lt;p&gt;First, lets generate the data&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using DiffEqFlux, OrdinaryDiffEq, Flux, Optim, Plots
+u0 = Float32[2.0; 0.0]
+datasize = 30
+tspan = (0.0f0, 1.5f0)
+tsteps = range(tspan[1], tspan[2], length = datasize)
+function trueODEfunc(du, u, p, t)
+    true_A = [-0.1 2.0; -2.0 -0.1]
+    du .= ((u.^3)&#39;true_A)&#39;
+end
+prob_trueode = ODEProblem(trueODEfunc, u0, tspan)
+ode_data = Array(solve(prob_trueode, Tsit5(), saveat = tsteps))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Second, we create a neural network that represents some idea we know about the system.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;dudt2 = FastChain((x, p) -&amp;gt; x.^3,
+                  FastDense(2, 50, tanh),
+                  FastDense(50, 2))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;What the neural network is just a mathematical function with the right parameters, what the code is doing is just writting:&lt;/p&gt;
+&lt;p&gt;$ Wx^3 \rightarrow Wx^3 + b \rightarrow tanh(Wx^3+b)$  $\rightarrow W_2 tanh(Wx^3+b) \rightarrow W_2 tanh(Wx^3+b) + b_2 $&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: For large neural networks its recommended to use &lt;code&gt;Flux&lt;/code&gt; instead of &lt;code&gt;DiffEqFlux&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Now we can write the &lt;code&gt;ODEProblem&lt;/code&gt; and solve it.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;neural_ode_f(u,p,t) = dudt2(u,p)
+pinit = initial_params(dudt2)
+prob = ODEProblem(neural_ode_f,u0,(0.0f0,1.5f0),pinit)
+sol = solve(prob, saveat = tsteps)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-neural-ode&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/NeuralODE1.svg&#34; data-caption=&#34;Neural ODE&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/NeuralODE1.svg&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Neural ODE
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;As we see the initial guess is not good, since we just try it to approximate by a random &lt;code&gt;ODE&lt;/code&gt;. Then what we need to do its find the right parameters that describe the neural network such that matches the ODE well enough. Therefore we can do it as before:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;function loss(p)
+    tmp_prob = remake(prob,p=p)
+    tmp_sol = solve(tmp_prob,Tsit5(), saveat = tsteps)
+    sum(abs2, Array(tmp_sol) - ode_data)
+end
+
+function neuralode_callback(p,l)
+    tmp_prob = remake(prob,p=p)
+    tmp_sol = solve(tmp_prob,Tsit5(), saveat = tsteps)
+    fig = plot(tmp_sol)
+    scatter!(fig,tsteps,ode_data&#39;) 
+    display(fig)
+    false
+end
+
+DiffEqFlux.sciml_train(loss, pinit, ADAM(0.05),
+                                    cb = neuralode_callback,
+                                    maxiters = 500)
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We get a loss value of $0.0678$. This can be optimize by using &lt;code&gt;ADAM&lt;/code&gt; and then &lt;code&gt;BFGS&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;res = DiffEqFlux.sciml_train(loss, pinit, ADAM(0.05),
+                                    cb = neuralode_callback,
+                                    maxiters = 100)
+DiffEqFlux.sciml_train(loss, res.minimizer, 
+                             BFGS(initial_stepnorm=0.01),
+                             maxiters = 100,
+                             cb = neuralode_callback)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we get a loss value of $ 1.591519 \times 10^{-3}$.&lt;/p&gt;
+&lt;p&gt;We can see that most of the computational time is on the gradients. For instance &lt;code&gt;Zygote.jl&lt;/code&gt; and &lt;code&gt;Turing.jl&lt;/code&gt; take control over which algorithm is used in order to optimize performance, anyways we can always choose which one we want 
+&lt;a href=&#34;https://diffeq.sciml.ai/stable/analysis/sensitivity/#Sensitivity-Algorithms-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;see DifferentialEquations.jl&lt;/a&gt; documentation on &lt;code&gt;Sensitivity Algorithms&lt;/code&gt; for this matter.&lt;/p&gt;
+&lt;p&gt;
+&lt;a href=&#34;https://diffeqflux.sciml.ai/dev/examples/neural_ode_sciml/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here&lt;/a&gt; to check more about Neural ODE on the SciML ecosystem.&lt;/p&gt;
+&lt;h1 id=&#34;physics-informed-neural-networks&#34;&gt;Physics-informed neural networks&lt;/h1&gt;
+</description>
     </item>
     
     <item>
@@ -30,6 +481,17 @@
 &lt;p&gt;We will &lt;strong&gt;simulate&lt;/strong&gt; the &lt;strong&gt;dynamics&lt;/strong&gt; of an epidemic, i.e, an outbreak of an infectious disease. In a population of people with &lt;strong&gt;N&lt;/strong&gt; individuals we will be interested in how the number of susceptible (&lt;strong&gt;S&lt;/strong&gt;),
 infectious (&lt;strong&gt;I&lt;/strong&gt;) and recovered (&lt;strong&gt;R&lt;/strong&gt;) individual changes over time. We will begin by looking at simple models that take into account only total numbers of people, by the end of the workshop we should be able to structure a more complicated &lt;strong&gt;individual - based&lt;/strong&gt; or &lt;strong&gt;agent - based&lt;/strong&gt; simulation, where we model individual people moving around space and interacting with one another.&lt;/p&gt;
 &lt;p&gt;For Simplicity, those individuals will be modelled as &lt;strong&gt;random walks&lt;/strong&gt; on a grid, i.e, points that choose a neighbouring grid point at random to jump to.&lt;/p&gt;
+&lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Generic programming&lt;/li&gt;
+&lt;li&gt;Composite types&lt;/li&gt;
+&lt;li&gt;(Outer) constructors&lt;/li&gt;
+&lt;li&gt;Generic programming with Types&lt;/li&gt;
+&lt;li&gt;Types for agents&lt;/li&gt;
+&lt;li&gt;Composition and Parametrised Types&lt;/li&gt;
+&lt;li&gt;Spatial SIR model&lt;/li&gt;
+&lt;li&gt;Dynamics&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h2 id=&#34;generic-programming-random-walks&#34;&gt;Generic programming: Random walks&lt;/h2&gt;
 &lt;p&gt;Each step roughly corresponds to a different function. Each different type of walker will need a different way to:&lt;/p&gt;
 &lt;ul&gt;
