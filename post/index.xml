@@ -21,6 +21,21 @@
 &lt;a href=&#34;https://youtu.be/0ZCCWzGGjcY?t=2825&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Juan Pablo Vielma&amp;rsquo;s JuliaCon 2020 talk&lt;/a&gt; and 
 
 &lt;a href=&#34;https://nbviewer.jupyter.org/github/jump-dev/JuMPTutorials.jl/blob/master/notebook/optimization_concepts/conic_programming.ipynb#Conic-Programming&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;JuMP devs Tutorials&lt;/a&gt;. We will begin by defining what is a cone and how to model them on &lt;code&gt;JuMP&lt;/code&gt; together with some simple examples, by the end we will solve an mixed - integer conic problem of avoiding obstacles by following a polynomial trajectory.&lt;/p&gt;
+&lt;p&gt;Why Conic Optimizacion?&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Linear- programming-like duality&lt;/li&gt;
+&lt;li&gt;Faster and more stable algorithms
+&lt;ul&gt;
+&lt;li&gt;Avoid non-differentiability issues, exploit primal-dual form, strong theory on barriers for interior point algorithms.&lt;/li&gt;
+&lt;li&gt;Industry change in 2018:
+&lt;ol&gt;
+&lt;li&gt;Knitro version 11.0 adds support for SOCP constraints.&lt;/li&gt;
+&lt;li&gt;Mosek version 9.0 deprecates expression/function-based formulations and focuses on pure conic (linear, SOCP, rotated SOCP, SDP, exp &amp;amp; power)&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;What is a Cone?&lt;/li&gt;
@@ -34,6 +49,8 @@
 &lt;li&gt;Other Cones and Functions.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
+&lt;li&gt;Mixed Integer Conic example: Avoiding obstacles (Drone and Flappy bird)&lt;/li&gt;
+&lt;li&gt;Continuous Conic programming on Julia?&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;what-is-a-cone&#34;&gt;What is a Cone?&lt;/h2&gt;
 &lt;p&gt;A subset $C$ of a vector space $V$ is a cone if $\forall x \in C$ and positive scalars $\alpha$, the product $\alpha x \in C$.&lt;/p&gt;
@@ -311,6 +328,123 @@ optimize!(model)
 &lt;a href=&#34;https://jump.dev/MathOptInterface.jl/dev/apimanual/index.html#Standard-form-problem-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MathOptInterface Manual&lt;/a&gt;. A good resource for learning more about functions which can be modelled using cones is the 
 &lt;a href=&#34;https://docs.mosek.com/modeling-cookbook/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MOSEK Modeling Cookbook&lt;/a&gt;. Also 
 &lt;a href=&#34;https://jump.dev/JuMP.jl/v0.19.0/installation/index.html#Getting-Solvers-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check this link to find out all the different solvers and their supported problem types&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;mixed---integer-conic-example&#34;&gt;Mixed - Integer Conic example&lt;/h2&gt;
+&lt;p&gt;Suppose we have a drone which we want to fly avoiding obstacles, how can we model and compute the optimal trajectory?&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-avoiding-obstacles&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/ConicOp/Avoiding.png&#34; data-caption=&#34;Avoiding Obstacles&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/ConicOp/Avoiding.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Avoiding Obstacles
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Let $(x(t),y(t))_{t \in [0,1]}$ represent the position at each time $t \in [0,1]$.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Step 1: Discretize time intro intervals $0 =  T_1 &amp;lt; T_2 &amp;lt; \dotso &amp;lt; T_N = 1$ and then describe position by polynomials $\{ p_i : [T_i, T_{i+1}] - &amp;gt; \mathbb{R}^2\}_{i=1}^{N}$ such that:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;$$(x(t), y(t)) = p_i(t) \quad t \in [T_i,T_{i+1}] $$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Step 2: &amp;ldquo;Safe polyhedrons&amp;rdquo; $P^r = \{ x \in \mathbb{R}^2 : A^r x \le b^r\}$ such that:
+$$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $$&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;$p_i(t) \in P^r \implies q_{i,r}(t) \ge 0 \quad \forall t$&lt;/li&gt;
+&lt;li&gt;Sum-of-Squares (SOS): $$ q_{i,r}(t) = \sum_{j}r_j^2 \text{ where } r_j(t) \text{ is a polynomial function}$$&lt;/li&gt;
+&lt;li&gt;Boyund degree of polynomials: &lt;code&gt;SDP&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Using &lt;code&gt;JuMP.jl&lt;/code&gt;, &lt;code&gt;PolyJuMP.jl&lt;/code&gt;, &lt;code&gt;SumOfSquares.jl&lt;/code&gt;, MI-SDP Solver &lt;code&gt;Pajarito.jl&lt;/code&gt; for a 9 region, 8 time steps problem, we get optimal &amp;ldquo;smoothness&amp;rdquo; in 651 seconds as shown in the picture above.&lt;/p&gt;
+&lt;p&gt;While for 60 horizontal segments &amp;amp; obstacle every 5: Optimal &amp;ldquo;clicks&amp;rdquo; in 80 seconds.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-avoiding-obstacles&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/ConicOp/Flappy.png&#34; data-caption=&#34;Avoiding Obstacles&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/ConicOp/Flappy.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Avoiding Obstacles
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;
+&lt;a href=&#34;https://github.com/juan-pablo-vielma/grid-science-2019&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check more here&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;continuous-solver&#34;&gt;Continuous solver?&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;Hypatia.jl&lt;/code&gt; solver: conic interior point algorithms and interfaces (Chris Coey, MIT)
+&lt;ul&gt;
+&lt;li&gt;
+&lt;a href=&#34;https://arxiv.org/abs/2005.01136&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;A homogeneous interior-point solver for non - symmetric cones&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Versatility &amp;amp; performance = More Cones
+&lt;ul&gt;
+&lt;li&gt;Two dozen predefined &lt;strong&gt;standard&lt;/strong&gt; and &lt;em&gt;exotic&lt;/em&gt; cones: e.g SDP, Sum-of-Squares and &amp;ldquo;Matrix&amp;rdquo; Sum-of-Squares for convexity/shape constraints.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Customizable: &amp;ldquo;Bring your own &lt;em&gt;barrier&lt;/em&gt;&amp;rdquo; = &amp;quot; Bring your own cone&amp;rdquo;&lt;/li&gt;
+&lt;li&gt;Take advantage of &lt;em&gt;Natural formulations&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;Take advantage of Julia: multi-precision arithmetic, abstract linear operators, etc.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Modeling with new and nonsymmetric cones (Lea Kapelevich, MIT)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Tulip.jl&lt;/code&gt;: An interior-point LP solver with abstract linear algebra (Mathieu Tanneau, Polytechnique Montréal)&lt;/li&gt;
+&lt;li&gt;
+&lt;a href=&#34;https://blegat.github.io/publications/#phd_thesis&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Set Programming with JuMP&lt;/a&gt; (Benoît Legat, UC Louvain)&lt;/li&gt;
+&lt;li&gt;JuliaMoments (Tillmann Weisser, Los Alamos National Laboratory)
+-Dual of Sum-of-Squares&lt;/li&gt;
+&lt;/ul&gt;
 </description>
     </item>
     
