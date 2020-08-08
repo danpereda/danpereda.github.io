@@ -5,12 +5,314 @@
     <link>https://danpereda.github.io/post/</link>
       <atom:link href="https://danpereda.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     <description>Posts</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 31 Jul 2020 02:56:27 -0400</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 07 Aug 2020 17:23:25 -0400</lastBuildDate>
     <image>
       <url>https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>Posts</title>
       <link>https://danpereda.github.io/post/</link>
     </image>
+    
+    <item>
+      <title>Conic Optimization on Julia</title>
+      <link>https://danpereda.github.io/post/conicopt/</link>
+      <pubDate>Fri, 07 Aug 2020 17:23:25 -0400</pubDate>
+      <guid>https://danpereda.github.io/post/conicopt/</guid>
+      <description>&lt;p&gt;Here I will describe a bit about conic programming on Julia based on 
+&lt;a href=&#34;https://youtu.be/0ZCCWzGGjcY?t=2825&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Juan Pablo Vielma&amp;rsquo;s JuliaCon 2020 talk&lt;/a&gt; and 
+
+&lt;a href=&#34;https://nbviewer.jupyter.org/github/jump-dev/JuMPTutorials.jl/blob/master/notebook/optimization_concepts/conic_programming.ipynb#Conic-Programming&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;JuMP devs Tutorials&lt;/a&gt;. We will begin by defining what is a cone and how to model them on &lt;code&gt;JuMP&lt;/code&gt; together with some simple examples, by the end we will solve an mixed - integer conic problem of avoiding obstacles by following a polynomial trajectory.&lt;/p&gt;
+&lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;What is a Cone?&lt;/li&gt;
+&lt;li&gt;Conic Programming.&lt;/li&gt;
+&lt;li&gt;Some type of Cones supported by JuMP and programming examples.
+&lt;ul&gt;
+&lt;li&gt;Second Order - Cone&lt;/li&gt;
+&lt;li&gt;Rotated Second Order - Cone&lt;/li&gt;
+&lt;li&gt;Exponential Cone&lt;/li&gt;
+&lt;li&gt;Positive Semidefinite Cone (PSD)&lt;/li&gt;
+&lt;li&gt;Other Cones and Functions.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;what-is-a-cone&#34;&gt;What is a Cone?&lt;/h2&gt;
+&lt;p&gt;A subset $C$ of a vector space $V$ is a cone if $\forall x \in C$ and positive scalars $\alpha$, the product $\alpha x \in C$.&lt;/p&gt;
+&lt;p&gt;A cone C is a convex cone if $\alpha x + \beta y \in C$, for any positive scalars $\alpha, \beta$, and any $x, y \in C$.&amp;rdquo;&lt;/p&gt;
+&lt;h2 id=&#34;conic-programming&#34;&gt;Conic Programming&lt;/h2&gt;
+&lt;p&gt;Conic programming problems are convex optimization problems in which a convex function is minimized over the intersection of an affine subspace and a convex cone. An example of a conic-form minimization problems, in the primal form is:&lt;/p&gt;
+&lt;p&gt;\begin{equation}
+\min_{ x \in \mathbb{R}^n} a_0 ^\top x + b_0
+\end{equation}&lt;/p&gt;
+&lt;p&gt;such that:
+$$A_i x + b_i \in \mathcal{C}_i  \quad \text{for } i = 1 \dotso m$$&lt;/p&gt;
+&lt;p&gt;The corresponding dual problem is:&lt;/p&gt;
+&lt;p&gt;$$ \max_{y_1, \dotso , y_m} - \sum_{i = 1}^{m} b_i ^T y_i + b_0$$&lt;/p&gt;
+&lt;p&gt;such that:
+$$ a_0 - \sum_{i = 1}^{m} A_{i}^{T} y_{i} = 0 $$
+$$ y_i \in \mathcal{C}_i^*$$&lt;/p&gt;
+&lt;p&gt;Where each $\mathcal{C}_i$ is a closed convex cone and $\mathcal{C}_i^*$ is its dual cone.&lt;/p&gt;
+&lt;h2 id=&#34;some-of-the-types-of-cones-supported-by-jump&#34;&gt;Some of the Types of Cones supported by JuMP&lt;/h2&gt;
+&lt;h3 id=&#34;second---order-cone&#34;&gt;Second - Order Cone&lt;/h3&gt;
+&lt;p&gt;The Second - Order Cone (or Lorentz Cone) of dimension $n$ is of the form:&lt;/p&gt;
+&lt;p&gt;$$ Q^n = \{ (t,x) \in \mathbb{R}^n: t \ge \lVert x \rVert_2 \} $$&lt;/p&gt;
+&lt;p&gt;A Second - Order Cone rotated by $\pi/4$ in the $(x_1,x_2)$ plane is called a Rotated Second- Order Cone. It is of the form:&lt;/p&gt;
+&lt;p&gt;$$ Q^n_r = \{ (t,u,x) \in \mathbb{R}^n: 2tu \ge \lVert x \rVert_2, t, u \ge 0 \} $$&lt;/p&gt;
+&lt;p&gt;These cones are represented in &lt;code&gt;JuMP&lt;/code&gt; using &lt;code&gt;MOI&lt;/code&gt; sets &lt;code&gt;SecondOrderCone&lt;/code&gt; and &lt;code&gt;RotatedSecondOrderCone&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&#34;example-euclidean-projection-on-a-hyperplane&#34;&gt;Example: Euclidean Projection on a hyperplane&lt;/h4&gt;
+&lt;p&gt;For a given point $u_0$ and a set $K$, we refer to any point $u \in K$ which is closest to $u_0$ as a projection of $u_0$ on $K$. The projection of a point $u_0$ on a hyperplane $K = \{ u : p&amp;rsquo;\cdot u = q \}$ is given by:&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \min_{x \in \mathbb{R}^n} &amp;amp; \lVert u - u_0 \rVert \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q 
+\end{align}$$&lt;/p&gt;
+&lt;p&gt;We can model the above problem as the following conic program:&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \min &amp;amp; t \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q \\&lt;br&gt;
+&amp;amp;  \quad &amp;amp; (t, u - u_0) \in Q^{n+1}
+\end{align}$$&lt;/p&gt;
+&lt;p&gt;If we transform this to the form we saw above,&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+x &amp;amp; = (t,u)\\&lt;br&gt;
+a_0 &amp;amp; = e_1\\&lt;br&gt;
+b_0 &amp;amp; = 0\\&lt;br&gt;
+A_1 &amp;amp; =(0,p)\\&lt;br&gt;
+b_1 &amp;amp; = -q \\&lt;br&gt;
+C_1 &amp;amp; = \mathbb{R}\\&lt;br&gt;
+A_2 &amp;amp; = 1\\&lt;br&gt;
+b_2 &amp;amp;= -(0,u_0)\\&lt;br&gt;
+C_2 &amp;amp;= Q^{n+1}
+\end{align}$$&lt;/p&gt;
+&lt;p&gt;Thus, we can obtain the dual problem as:&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \max &amp;amp; y_1 + (0,u_0)^\top y_2 \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; e_1 -(0,p)^\top y_1 - y_2 = 0 \\&lt;br&gt;
+&amp;amp;  \quad &amp;amp; y_1 \in \mathbb{R}\\&lt;br&gt;
+&amp;amp; \quad &amp;amp; y_2 \in Q^{n+1}
+\end{align}$$&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s model this in Julia.&lt;/p&gt;
+&lt;p&gt;First we need to load some packages &lt;code&gt;JuMP&lt;/code&gt; is the modeling package, &lt;code&gt;ECOS&lt;/code&gt; is a solver, &lt;code&gt;LinearAlgebra&lt;/code&gt; and &lt;code&gt;Random&lt;/code&gt; are just to get some linear algebra operations and a fix seed for reproducibility respectively.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using JuMP
+using ECOS
+using LinearAlgebra
+using Random
+Random.seed!(2020);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Lets get some random values for the problem&amp;rsquo;s input:  $u_0$, $p$ and $q$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;u0 = rand(10)
+p = rand(10)
+q = rand();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we can write the model:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;model = Model(optimizer_with_attributes(ECOS.Optimizer, &amp;quot;printlevel&amp;quot; =&amp;gt; 0))
+@variable(model, u[1:10])
+@variable(model, t)
+@objective(model, Min, t)
+@constraint(model, [t, (u - u0)...] in SecondOrderCone())
+@constraint(model, u&#39; * p == q)
+optimize!(model)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-optimization-result&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrder.png&#34; data-caption=&#34;Optimization Result&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrder.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Optimization Result
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;Then we can see the objective function value and variable value at the optimum by doing:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;@show objective_value(model);
+@show value.(u);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We get an objective value of : $1.4149915748070703$. We can also solve the dual problem:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;e1 = [1.0, zeros(10)...]
+dual_model = Model(optimizer_with_attributes(ECOS.Optimizer, &amp;quot;printlevel&amp;quot; =&amp;gt; 0))
+@variable(dual_model, y1 &amp;lt;= 0.0)
+@variable(dual_model, y2[1:11])
+@objective(dual_model, Max, q * y1 + dot(vcat(0.0, u0), y2))
+@constraint(dual_model, e1 - [0.0, p...] .* y1 - y2 .== 0.0)
+@constraint(dual_model, y2 in SecondOrderCone())
+optimize!(dual_model)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-optimization-dual-problem&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrderDual.png&#34; data-caption=&#34;Optimization Dual problem&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrderDual.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Optimization Dual problem
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;@show objective_value(dual_model);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We get an objective value of : $1.4149916455792486$. The difference between this value and the primal is $ \approx 7.07 \times 10^{-8}$, does this makes sense?&lt;/p&gt;
+&lt;p&gt;We can also have an equivalent formulation using a Rotated Second - Order cone:&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \min &amp;amp; t \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q \\&lt;br&gt;
+&amp;amp;  \quad &amp;amp; (t,  1/2, u - u_0) \in Q^{n+2}_r
+\end{align}$$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;model = Model(optimizer_with_attributes(ECOS.Optimizer, &amp;quot;printlevel&amp;quot; =&amp;gt; 0))
+@variable(model, u[1:10])
+@variable(model, t)
+@objective(model, Min, t)
+@constraint(model, [t, 0.5, (u - u0)...] in RotatedSecondOrderCone())
+@constraint(model, u&#39; * p == q)
+optimize!(model)
+&lt;/code&gt;&lt;/pre&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-optimization-rotated-formulation&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrderRotated.png&#34; data-caption=&#34;Optimization Rotated formulation&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/ConicOp/2ndOrderRotated.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Optimization Rotated formulation
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;We notice that the objective function values are different. There is a simple explanation to that behaviour. In the case of Second-Order Cone the objective function is $\lVert u - u_0 \rVert _2$ while in the case of a Rotated Second-Order Cone is $\lVert u - u_0 \rVert_2^2$. However, &lt;strong&gt;the values of $u$&lt;/strong&gt; are the same in both problems.&lt;/p&gt;
+&lt;h3 id=&#34;exponential-cone&#34;&gt;Exponential Cone&lt;/h3&gt;
+&lt;p&gt;An exponential Cone is a set of the form:&lt;/p&gt;
+&lt;p&gt;$$ K_{\exp} = \{  (x,y,z) \in \mathbb{R}^3 : y \cdot \exp(x/y) \le z, y \ge 0 \}$$&lt;/p&gt;
+&lt;p&gt;It is represented in &lt;code&gt;JuMP&lt;/code&gt; using the &lt;code&gt;MOI&lt;/code&gt; set &lt;code&gt;ExponentialCone&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id=&#34;example-entropy-maximization&#34;&gt;Example: Entropy Maximization&lt;/h4&gt;
+&lt;p&gt;We want to maximize the entropy function $ H(x) = - x log (x)$ subject to linear inequality constraints.&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \max &amp;amp; -\sum_{i=1}^{n} x_ilog(x_i) \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; \mathbf{1}^\top x = 1\\&lt;br&gt;
+&amp;amp;  \quad &amp;amp; Ax \le b
+\end{align}$$&lt;/p&gt;
+&lt;p&gt;We just need to use the following transformation:&lt;/p&gt;
+&lt;p&gt;$$ t \le -xlog(x) \iff t \le x log(1/x) \iff (t,x,1) \in K_{\exp}$$&lt;/p&gt;
+&lt;p&gt;An example in Julia would be:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;n = 15;
+m = 10;
+A = randn(m, n);
+b = rand(m, 1);
+
+model = Model(optimizer_with_attributes(ECOS.Optimizer, &amp;quot;printlevel&amp;quot; =&amp;gt; 0))
+@variable(model, t[1:n])
+@variable(model, x[1:n])
+@objective(model, Max, sum(t))
+@constraint(model, sum(x) == 1.0)
+@constraint(model, A * x .&amp;lt;= b )
+# Cannot use the exponential cone directly in JuMP, hence we use MOI to specify the set.
+@constraint(model, con[i = 1:n], [t[i], x[i], 1.0] in MOI.ExponentialCone())
+
+optimize!(model);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;positive-semidefinite-cone&#34;&gt;Positive Semidefinite Cone&lt;/h3&gt;
+&lt;p&gt;The set of Positive Semidefinite Matrices of dimension $n$ form a cone in $\mathbb{R}^n$. We write this set mathematically as:&lt;/p&gt;
+&lt;p&gt;$$ S^n_+ = \{  X \in S^n : z ^\top X z \ge 0 , \forall z \in \mathbb{R}^n\}$$&lt;/p&gt;
+&lt;p&gt;A PSD cone is represented in JuMP using the MOI sets &lt;code&gt;PositiveSemidefiniteConeTriangle&lt;/code&gt; (for upper  triangle of a PSD matrix) and &lt;code&gt;PositiveSemidefiniteConeSquare&lt;/code&gt; (for a complete PSD matrix). However, it is preferable to use the &lt;code&gt;PSDCone&lt;/code&gt; shortcut as illustrated below.&lt;/p&gt;
+&lt;h4 id=&#34;example-largest-eigenvalue-of-a-symmetrix-matrix&#34;&gt;Example: Largest Eigenvalue of a Symmetrix Matrix&lt;/h4&gt;
+&lt;p&gt;Suppose $A$ has eigenvalues $\lambda_1 \ge \lambda_2 \ge \dotso \ge \lambda_n$. Then the matrix $tI - A$ has eigenvalues $ t - \lambda_1$, $t - \lambda_2$, $\dotso$, $t - \lambda_n$. Note that $t I - A$ is PSD exactly when all these eigenvalues are non-negative, and this happends for values $t \ge \lambda_1$. Thus, we can model the problem of fiding the largest eigenvalue of a symmetrix matrix as:&lt;/p&gt;
+&lt;p&gt;$$ \begin{align}
+&amp;amp; \lambda_1 = \max  t\\&lt;br&gt;
+\text{s.t. } &amp;amp; tI - A  \succeq 0
+\end{align}$$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using LinearAlgebra
+using SCS
+
+A = [3 2 4;
+     2 0 2;
+     4 2 3]
+
+model = Model(optimizer_with_attributes(SCS.Optimizer, &amp;quot;verbose&amp;quot; =&amp;gt; 0))
+@variable(model, t)
+@objective(model, Min, t)
+@constraint(model, t .* Matrix{Float64}(I, 3, 3) - A in PSDCone())
+
+optimize!(model)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Which give us $\lambda_1 = 8$.&lt;/p&gt;
+&lt;h3 id=&#34;other-cones-and-functions&#34;&gt;Other Cones and Functions&lt;/h3&gt;
+&lt;p&gt;For other cones supported by JuMP, check out the 
+&lt;a href=&#34;https://jump.dev/MathOptInterface.jl/dev/apimanual/index.html#Standard-form-problem-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MathOptInterface Manual&lt;/a&gt;. A good resource for learning more about functions which can be modelled using cones is the 
+&lt;a href=&#34;https://docs.mosek.com/modeling-cookbook/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MOSEK Modeling Cookbook&lt;/a&gt;. Also 
+&lt;a href=&#34;https://jump.dev/JuMP.jl/v0.19.0/installation/index.html#Getting-Solvers-1&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check this link to find out all the different solvers and their supported problem types&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Scientific Machine Learning on Julia</title>
@@ -92,10 +394,10 @@ sol = solve(prob)
 
 
 
-&lt;figure id=&#34;figure-lakta--volterra-solution&#34;&gt;
+&lt;figure id=&#34;figure-lokta--volterra-solution&#34;&gt;
 
 
-  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/LaktaVolterra.svg&#34; data-caption=&#34;Lakta- Volterra Solution&#34;&gt;
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/SciML/LaktaVolterra.svg&#34; data-caption=&#34;Lokta- Volterra Solution&#34;&gt;
 
 
   &lt;img src=&#34;https://danpereda.github.io/img/post/SciML/LaktaVolterra.svg&#34; alt=&#34;&#34;  &gt;
@@ -105,7 +407,7 @@ sol = solve(prob)
   
   
   &lt;figcaption&gt;
-    Lakta- Volterra Solution
+    Lokta- Volterra Solution
   &lt;/figcaption&gt;
 
 
@@ -950,7 +1252,7 @@ Flux.train!(loss, Flux.params(NNODE), data, opt; cb= cb)
 &lt;li&gt;Equivalent to regularizing the neural network by a scientific equation&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;Can train fast continuous surrogates by making the neural netowrk parameter dependent.&lt;/li&gt;
+&lt;li&gt;Can train fast continuous surrogates by making the neural network parameter dependent.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;example-solving-a-100-dimensional-hamilton-jacobi-bellman-equation&#34;&gt;Example: Solving a 100 Dimensional Hamilton-Jacobi-Bellman Equation&lt;/h3&gt;
 &lt;p&gt;For this problem we will use &lt;code&gt;NeuralPDE.jl&lt;/code&gt; (
