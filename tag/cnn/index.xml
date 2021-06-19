@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CNN | Danpereda</title>
+    <link>https://danpereda.github.io/tag/cnn/</link>
+      <atom:link href="https://danpereda.github.io/tag/cnn/index.xml" rel="self" type="application/rss+xml" />
+    <description>CNN</description>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 18 Jun 2021 18:08:02 -0400</lastBuildDate>
+    <image>
+      <url>https://danpereda.github.io/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
+      <title>CNN</title>
+      <link>https://danpereda.github.io/tag/cnn/</link>
+    </image>
+    
+    <item>
+      <title>Hand tracking and volume gesture controller</title>
+      <link>https://danpereda.github.io/post/handtracking/</link>
+      <pubDate>Fri, 18 Jun 2021 18:08:02 -0400</pubDate>
+      <guid>https://danpereda.github.io/post/handtracking/</guid>
+      <description>&lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;We will first lean how to use our webcam video as an input for a Hand tracking model, and we will modularize
+it in order to make it easy to use in other projects. As a test, we will build a volume gesture controller, such that we
+can control the volume of our computer using hand gestures. The result will be will like this (but in real time).&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-volume-gesture-controller--hand-tracking&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/HandTracking/Volumne.png&#34; data-caption=&#34;Volume Gesture Controller &amp;#43; Hand tracking&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/HandTracking/Volumne.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Volume Gesture Controller + Hand tracking
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;p&gt;The learning material as well as the project idea can be found mainly in 
+&lt;a href=&#34;https://www.computervision.zone/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;computervision.zone&lt;/a&gt;, 
+&lt;a href=&#34;https://google.github.io/mediapipe/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;mediapipe&lt;/a&gt; and
+
+&lt;a href=&#34;https://docs.opencv.org/4.5.2/d6/d00/tutorial_py_root.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;opencv&lt;/a&gt;. The main difference is that I will be exploring and explaining
+step by step from the deep learning model to the coding.&lt;/p&gt;
+&lt;h1 id=&#34;table-of-contents&#34;&gt;Table of contents&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Setting up environment.&lt;/li&gt;
+&lt;li&gt;Basics: Read the webcam.&lt;/li&gt;
+&lt;li&gt;Hand Detection and Tracking using Mediapipe
+&lt;ul&gt;
+&lt;li&gt;Mediapipe Hands Model.&lt;/li&gt;
+&lt;li&gt;Palm Detection Model.&lt;/li&gt;
+&lt;li&gt;Hand Landmark Model.&lt;/li&gt;
+&lt;li&gt;Coding it.&lt;/li&gt;
+&lt;li&gt;Modularize.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Volume Gesture Controller using Hand Tracking module&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;setting-up-environment&#34;&gt;Setting up environment&lt;/h1&gt;
+&lt;p&gt;Install the requirements&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-commandline&#34;&gt;pip install opencv-contrib-python
+pip install mediapipe
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;basics-read-the-camera&#34;&gt;Basics: Read the camera&lt;/h1&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2 # opencv
+import sys  # Python Standard Library System-specific parameters and functions
+
+# if we have more than one camera, we select one with the variable s
+s = 0
+if len(sys.argv) &amp;gt; 1:
+    s = sys.argv[1]
+
+# Define camera we are going to read
+source = cv2.VideoCapture(s)
+# Create a window for the camera
+win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+
+# While we don&#39;t press the &amp;quot;ESC&amp;quot; key the window will remain open
+# and we will show the frame in the window previously defined
+while cv2.waitKey(1) != 27: 
+    success, frame = source.read()
+    # if we don&#39;t read the image successfully break the loop
+    if not success:
+        break
+    # Otherwise show the frame on the window
+    cv2.imshow(win_name, frame)
+    
+# Since we exit the loop, its time to clean resources
+source.release()
+cv2.destroyWindow(win_name)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;hand-detection-and-tracking-using-mediapipe&#34;&gt;Hand Detection and Tracking using Mediapipe&lt;/h1&gt;
+&lt;p&gt;I will give a brief description on the Mediapipe models and focus on how to use them together with opencv.
+Also, I will be using images and videos from the documentation at 
+&lt;a href=&#34;https://google.github.io/mediapipe/solutions/hands#python-solution-api&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Google Mediapipe&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;mediapipe-hands-model&#34;&gt;Mediapipe Hands Model&lt;/h2&gt;
+&lt;p&gt;MediaPipe Hands is a high-fidelity hand and finger tracking solution.
+It employs machine learning (ML) to infer 21 3D landmarks of a hand from just a single frame. Its ML Pipeline consists of multiple models working together.
+A palm detection model that operates on the full image and returns an oriented hand bounding box.
+A hand landmark model that operates on the cropped image region defined by the palm detector and returns high-fidelity 3D hand keypoints.
+In addition, in the pipeline the crops can also be generated based on the hand landmarks identified in the previous frame, and only when the landmark model could no longer identify hand presence is palm detection invoked to relocalize the hand.&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+&lt;img src = &#34;https://google.github.io/mediapipe/images/mobile/hand_tracking_3d_android_gpu.gif&#34;&gt;
+&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+Fig.1 - Tracked 3D hand landmarks are represented by dots in different shades, with the brighter ones denoting landmarks closer to the camera.
+&lt;/p&gt;
+&lt;h3 id=&#34;palm-detection-model&#34;&gt;Palm Detection Model&lt;/h3&gt;
+&lt;p&gt;The first step will be detecting a palm, since estimating bounding boxes of rigid objects like palms and fists is significantly simpler than detecting hands
+with articulated fingers. For this task, a single-shot detector has been used (
+&lt;a href=&#34;https://arxiv.org/abs/1512.02325&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;SSD: Single Shot MultiBox Detector Paper&lt;/a&gt;).
+In addition, as palms are smaller objects and the single-shot detector will create many boxes,
+some technique to select the correct entity must be used,
+for this problem the non-maximum supression algorithm works well even for two-hand-self-occlusion cases, like handshakes.
+Moreover, palms can be modelled using square bounding boxes (anchors in ML terminology) ignoring other aspect ratios,
+and therefore reducing the number of anchors by a factor of 3-5. Second, an encoder-deocoder feature extractor is used for
+bigger scene context awareness even for small objects.&lt;/p&gt;
+&lt;p&gt;The average precision of this palm detection model is 95.7%.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Note on The Non Maximum Supression (NMS) algorithm&lt;/strong&gt; : is a technique used in many computer vision algorithms.
+It is a class of algorithms to select one entity
+(e.g. bounding boxes) out of many overlapping entities.
+The selection criteria can be chosen to arrive at particular results.
+Most commonly, the criteria is some form of probability number along with some form of overlap measure (e.g. IOU).
+
+&lt;a href=&#34;https://whatdhack.medium.com/reflections-on-non-maximum-suppression-nms-d2fce148ef0a&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;read more about it here&lt;/a&gt;&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+&lt;img src = &#34;https://miro.medium.com/max/838/1*8EoRC_Xu625eVAquP9ga5w.png&#34;&gt;
+&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+NMS
+&lt;/p&gt;
+&lt;p&gt;Finally we can see the computation graph of the model.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-palm-detection-graph&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/HandTracking/PalmTensor.png&#34; data-caption=&#34;Palm detection graph&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/HandTracking/PalmTensor.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Palm detection graph
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;hand-landmark-model&#34;&gt;Hand Landmark Model&lt;/h3&gt;
+&lt;p&gt;After the palm detection over the whole image, the hand landmark model performs precise keypoint
+localization of 21 3D hand-knuckle coordinates inside the detected hand regions via regression, that is direct
+coordinate prediction. The model learns a consistent internal hand pose representation and is robust even to
+partially visible hands and self-occlusions.&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+&lt;img src = &#34;https://google.github.io/mediapipe/images/mobile/hand_landmarks.png&#34;&gt;
+&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+Fig.2 - Hand Landmarks
+&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+&lt;img src = &#34;https://google.github.io/mediapipe/images/mobile/hand_crops.png&#34;&gt;
+&lt;/p&gt;
+&lt;p align = &#34;center&#34;&gt;
+Fig.3 - Top: Aligned hand crops passed to the tracking network with ground truth annotation. Bottom: Rendered synthetic hand images with ground truth annotation.
+&lt;/p&gt;
+&lt;p&gt;We can see the computation graph here.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-hand-tracking-graph&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/HandTracking/HandGraph.png&#34; data-caption=&#34;Hand Tracking Graph&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/HandTracking/HandGraph.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Hand Tracking Graph
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;coding-it&#34;&gt;Coding it&lt;/h2&gt;
+&lt;p&gt;First lets take a look at the &lt;strong&gt;Hands&lt;/strong&gt; class provided by Mediapipe to check what we need.
+For instance, as opencv reads images in &lt;code&gt;BGR&lt;/code&gt; format, we need to check if this class needs an &lt;code&gt;RGB&lt;/code&gt; one.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;class Hands(SolutionBase):
+  &amp;quot;&amp;quot;&amp;quot;MediaPipe Hands.
+
+  MediaPipe Hands processes an RGB image and returns the hand landmarks and
+  handedness (left v.s. right hand) of each detected hand.
+
+  Note that it determines handedness assuming the input image is mirrored,
+  i.e., taken with a front-facing/selfie camera (
+  https://en.wikipedia.org/wiki/Front-facing_camera) with images flipped
+  horizontally. If that is not the case, use, for instance, cv2.flip(image, 1)
+  to flip the image first for a correct handedness output.
+
+  Please refer to https://solutions.mediapipe.dev/hands#python-solution-api for
+  usage examples.
+  &amp;quot;&amp;quot;&amp;quot;
+
+  def __init__(self,
+               static_image_mode=False,
+               max_num_hands=2,
+               min_detection_confidence=0.5,
+               min_tracking_confidence=0.5):
+    &amp;quot;&amp;quot;&amp;quot;Initializes a MediaPipe Hand object.
+
+    Args:
+      static_image_mode: Whether to treat the input images as a batch of static
+        and possibly unrelated images, or a video stream. See details in
+        https://solutions.mediapipe.dev/hands#static_image_mode.
+      max_num_hands: Maximum number of hands to detect. See details in
+        https://solutions.mediapipe.dev/hands#max_num_hands.
+      min_detection_confidence: Minimum confidence value ([0.0, 1.0]) for hand
+        detection to be considered successful. See details in
+        https://solutions.mediapipe.dev/hands#min_detection_confidence.
+      min_tracking_confidence: Minimum confidence value ([0.0, 1.0]) for the
+        hand landmarks to be considered tracked successfully. See details in
+        https://solutions.mediapipe.dev/hands#min_tracking_confidence.
+    &amp;quot;&amp;quot;&amp;quot;
+
+  def process(self, image: np.ndarray) -&amp;gt; NamedTuple:
+    &amp;quot;&amp;quot;&amp;quot;Processes an RGB image and returns the hand landmarks and handedness of each detected hand.
+
+    Args:
+      image: An RGB image represented as a numpy ndarray.
+
+    Raises:
+      RuntimeError: If the underlying graph throws any error.
+      ValueError: If the input image is not three channel RGB.
+
+    Returns:
+      A NamedTuple object with two fields: a &amp;quot;multi_hand_landmarks&amp;quot; field that
+      contains the hand landmarks on each detected hand and a &amp;quot;multi_handedness&amp;quot;
+      field that contains the handedness (left v.s. right hand) of the detected
+      hand.
+    &amp;quot;&amp;quot;&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;From here we see a few things:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We will have to convert the image using &lt;code&gt;cv2.cvtColor(img,cv2.COLOR_BGR2RGB)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;To define a Hands object we need to access to &lt;code&gt;mediapipe.solutions.hands.Hands(*Args)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;We need to call the &lt;code&gt;process&lt;/code&gt; function to run the inference model in our image,
+and get the results by calling &lt;code&gt;.multi_hand_landmarks&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With this we will have our results as coordinates, as we saw in the Hand Landmark Model section
+there are 21 landmark points so there must be some function to automatically draw the landmarks and the conections
+between them right? Indeed, if we check &lt;code&gt;mediapipe.solutions.drawing_utils&lt;/code&gt; we can see the following
+method.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;def draw_landmarks(
+    image: np.ndarray,
+    landmark_list: landmark_pb2.NormalizedLandmarkList,
+    connections: Optional[List[Tuple[int, int]]] = None,
+    landmark_drawing_spec: DrawingSpec = DrawingSpec(color=RED_COLOR),
+    connection_drawing_spec: DrawingSpec = DrawingSpec()):
+  &amp;quot;&amp;quot;&amp;quot;Draws the landmarks and the connections on the image.
+
+  Args:
+    image: A three channel RGB image represented as numpy ndarray.
+    landmark_list: A normalized landmark list proto message to be annotated on
+      the image.
+    connections: A list of landmark index tuples that specifies how landmarks to
+      be connected in the drawing.
+    landmark_drawing_spec: A DrawingSpec object that specifies the landmarks&#39;
+      drawing settings such as color, line thickness, and circle radius.
+    connection_drawing_spec: A DrawingSpec object that specifies the
+      connections&#39; drawing settings such as color and line thickness.
+
+  Raises:
+    ValueError: If one of the followings:
+      a) If the input image is not three channel RGB.
+      b) If any connetions contain invalid landmark index.
+  &amp;quot;&amp;quot;&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we are ready to run code it, lets get an image from our webcam, run the inferece model
+on it an finally draw the landmarks and conections.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2
+import sys
+import mediapipe as mp
+
+s = 0
+if len(sys.argv) &amp;gt; 1:
+    s = sys.argv[1]
+
+source = cv2.VideoCapture(s)
+win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands() 
+mp_draw = mp.solutions.drawing_utils
+
+while cv2.waitKey(1) != 27:
+    success, frame = source.read()
+    if not success:
+        break
+    imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # To improve performance, optionally mark the image as not writeable to
+    # pass by reference.
+    imgRGB.flags.writeable = False
+    # Run inference model on the RGB image
+    results = hands.process(imgRGB)
+    # We will like to know the hand_landmarks of all hands detected
+    if results.multi_hand_landmarks:
+        for hand_landmark in results.multi_hand_landmarks:
+            mp_draw.draw_landmarks(frame, hand_landmark, mp_hands.HAND_CONNECTIONS)
+    
+    cv2.imshow(win_name, frame)
+    
+source.release()
+cv2.destroyWindow(win_name)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now lets say we want to access some specific landmarks, can we do it? the answer is yes,
+we can get the &lt;code&gt;ID&lt;/code&gt; and relative coordinates &lt;code&gt;(x,y)&lt;/code&gt; accesing to the &lt;code&gt;.landmark&lt;/code&gt;
+method.&lt;/p&gt;
+&lt;p&gt;In the following code I draw some special circles on the landmarks 4 and 20 (see picture in Hand Landmark Model)
+and added some Frames per second count on the top left corner.&lt;/p&gt;
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure id=&#34;figure-hand-tracking-result&#34;&gt;
+
+
+  &lt;a data-fancybox=&#34;&#34; href=&#34;https://danpereda.github.io/img/post/HandTracking/Hand.png&#34; data-caption=&#34;Hand Tracking Result&#34;&gt;
+
+
+  &lt;img src=&#34;https://danpereda.github.io/img/post/HandTracking/Hand.png&#34; alt=&#34;&#34;  &gt;
+&lt;/a&gt;
+
+
+  
+  
+  &lt;figcaption&gt;
+    Hand Tracking Result
+  &lt;/figcaption&gt;
+
+
+&lt;/figure&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2
+import sys
+import time
+import mediapipe as mp
+
+s = 1
+if len(sys.argv) &amp;gt; 1:
+    s = sys.argv[1]
+
+source = cv2.VideoCapture(s)
+win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands() 
+mp_draw = mp.solutions.drawing_utils
+
+# To make FPS count
+previous_time = time.time()
+
+while cv2.waitKey(1) != 27:
+    success, frame = source.read()
+    if not success:
+        break
+    imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # To improve performance, optionally mark the image as not writeable to
+    # pass by reference.
+    imgRGB.flags.writeable = False
+    # Run inference model on the RGB image
+    results = hands.process(imgRGB)
+    # We will like to know the hand_landmarks of all hands detected
+    if results.multi_hand_landmarks:
+        for hand_landmark in results.multi_hand_landmarks:
+            # If we want to do things with an specifict landmark
+            for id_landmark, landmark in enumerate(hand_landmark.landmark):
+                # The coordinates of the landmarks are relative to the height and width
+                height, width, channels = frame.shape
+                center_x, center_y = int(landmark.x * width), int(landmark.y * height)
+                if id_landmark == 4:
+                    cv2.circle(frame, (center_x, center_y), 15, (255, 0, 255), cv2.FILLED)
+                if id_landmark == 20:
+                    cv2.circle(frame, (center_x, center_y), 15, (255, 255, 0), cv2.FILLED)
+
+            mp_draw.draw_landmarks(frame, hand_landmark, mp_hands.HAND_CONNECTIONS)
+
+    # Display FPS count
+    current_time = time.time()
+    fps = int(1/(current_time - previous_time))
+    previous_time = current_time
+    cv2.putText(frame, str(fps), (10,70), cv2.FONT_ITALIC, 3, (255, 0, 255), thickness = 2)
+
+    cv2.imshow(win_name, frame)
+    
+source.release()
+cv2.destroyWindow(win_name)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;modularize-all-we-have-learned-today&#34;&gt;Modularize all we have learned today&lt;/h2&gt;
+&lt;p&gt;As we saw before, we are recycling the same code time over time, for this reason,
+it will come in handy to modularize what we have done so that we can use it on other
+projects as well.&lt;/p&gt;
+&lt;p&gt;The module will look like this.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2
+import time
+import mediapipe as mp
+
+class handDetector():
+    def __init__(self,
+                 static_image_mode=False,
+                 max_num_hands=2,
+                 min_detection_confidence=0.5,
+                 min_tracking_confidence=0.5):
+
+        self.static_image_mode = static_image_mode
+        self.max_num_hands = max_num_hands
+        self.min_detection_confidence = min_detection_confidence
+        self.min_tracking_confidence = min_tracking_confidence
+        # Initializing Hand model and drawing utils
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(self.static_image_mode,
+                                         self.max_num_hands,
+                                         self.min_detection_confidence,
+                                         self.min_tracking_confidence)
+        self.mp_draw = mp.solutions.drawing_utils
+
+    def findHands(self, img):
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgRGB.flags.writeable = False
+        # Run inference model on the RGB image
+        self.results = self.hands.process(imgRGB)
+        if self.results.multi_hand_landmarks:
+            for hand_landmark in self.results.multi_hand_landmarks:
+                 self.mp_draw.draw_landmarks(img, hand_landmark, self.mp_hands.HAND_CONNECTIONS)
+        return img
+
+    def findPosition(self, img, hand_number = 0):
+        landmark_list = []
+        if self.results.multi_hand_landmarks:
+            hand = self.results.multi_hand_landmarks[hand_number]
+            for id_landmark, landmark in enumerate(hand.landmark):
+                height, width, channels = img.shape
+                center_x, center_y = int(landmark.x * width), int(landmark.y * height)
+                landmark_list.append([id_landmark, center_x, center_y])
+        return landmark_list
+
+# This is for testing in the same module that everything works
+def main():
+    source = cv2.VideoCapture(1)
+    win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+    cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+    detector = handDetector()
+    previous_time = time.time()
+    while cv2.waitKey(1) != 27:
+        success, frame = source.read()
+        if not success:
+            break
+        img = detector.findHands(frame)
+        landmark_list = detector.findPosition(img)
+        if len(landmark_list) != 0:
+            print(landmark_list[4])
+        # Display FPS count
+        current_time = time.time()
+        fps = int(1 / (current_time - previous_time))
+        previous_time = current_time
+        cv2.putText(frame, str(fps), (10, 70), cv2.FONT_ITALIC, 3, (255, 0, 255), thickness=2)
+
+        cv2.imshow(win_name, img)
+
+    source.release()
+    cv2.destroyWindow(win_name)
+
+if __name__ == &#39;__main__&#39;:
+    main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then if we want to use it we just do the following:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2
+import mediapipe as mp
+import HandTrackingModule
+
+source = cv2.VideoCapture(1)
+win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+
+detector = HandTrackingModule.handDetector()
+
+while cv2.waitKey(1) != 27:
+    success, frame = source.read()
+    if not success:
+        break
+    img = detector.findHands(frame)
+
+    cv2.imshow(win_name, img)
+
+source.release()
+cv2.destroyWindow(win_name)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;volume-gesture-controller&#34;&gt;Volume Gesture Controller&lt;/h1&gt;
+&lt;p&gt;We have a hand tracking module already done, so let&amp;rsquo;s say we want to control the volume of our computer
+by moving the thumb and index finger closer and further away from each other. From before we now the thumb is
+landmark number 4 and the index is landmark number 8.&lt;/p&gt;
+&lt;p&gt;Now we can think on creating a straight line between the landmark 4 and 8, and computing its length which will be proportional
+to the volume. We need to be careful with the following, the length of this line might not be 0 even when we have our fingers touching
+each other, because the landmark points are not on the edge and we don&amp;rsquo;t know what is the distance in pixels when they are the farthest
+away from each other, therefore we will have to print the length and create a &lt;code&gt;UPPER_BOUND&lt;/code&gt;
+and &lt;code&gt;LOWER_BOUND&lt;/code&gt; based on this, second, the volume range that our package will can be 0 to 100, but it can also be something else, in any case
+we need to map our [&lt;code&gt;LOWER_BOUND&lt;/code&gt;, &lt;code&gt;UPPER_BOUND&lt;/code&gt;]  interval into [&lt;code&gt;MIN_VOL&lt;/code&gt;, &lt;code&gt;MAX_VOL&lt;/code&gt;].&lt;/p&gt;
+&lt;p&gt;Finally, just to make it look prettier, we will add draw a circle in the middle point that will change color when both fingers are super close
+to each other and a volume bar to the left of the screen.&lt;/p&gt;
+&lt;h2 id=&#34;volume-controller-package&#34;&gt;Volume Controller Package&lt;/h2&gt;
+&lt;p&gt;We will use 
+&lt;a href=&#34;https://github.com/AndreMiras/pycaw&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;pycaw&lt;/a&gt; as it is pretty straightforward to use from the github repository
+we can see the following:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+devices = AudioUtilities.GetSpeakers()
+interface = devices.Activate(
+    IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interface, POINTER(IAudioEndpointVolume))
+volume.GetMute()
+volume.GetMasterVolumeLevel()
+volume.GetVolumeRange()
+volume.SetMasterVolumeLevel(-20.0, None)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;From here we can see that the first lines are initialization of the devices and creating a &lt;code&gt;volume&lt;/code&gt; object, this one
+has some methods, from which we are interested in the last two, &lt;code&gt;GetVolumeRange()&lt;/code&gt; and &lt;code&gt;SetMasterVolumeLevel(-20.0, None)&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;finishing-it&#34;&gt;Finishing it!&lt;/h2&gt;
+&lt;p&gt;Our final code will look like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import cv2
+import sys
+import numpy as np
+import time
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import HandTrackingModule as htm
+
+s = 0
+if len(sys.argv) &amp;gt; 1:
+    s = sys.argv[1]
+
+# Define width and height of the webcam
+width_cam, height_cam = 1280, 720
+
+# Define camera we are going to read
+source = cv2.VideoCapture(s)
+source.set(3, width_cam) # Property number 3 : width
+source.set(4, height_cam) # Property number 4: height
+# Create a window for the camera
+win_name = &amp;quot;Camera Preview: ESC to exit&amp;quot;
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+
+previous_time = 0
+# Initialize detector
+detector = htm.handDetector(max_num_hands=1,
+                            min_tracking_confidence=0.7,
+                            min_detection_confidence=0.7)
+
+# Initialize Audio devices
+devices = AudioUtilities.GetSpeakers()
+interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+# Get Volume Range
+volume_range = volume.GetVolumeRange()
+MIN_VOLUME, MAX_VOLUME = volume_range[0], volume_range[1]
+
+# Define constants
+UPPER_BOUND = 300
+LOWER_BOUND = 30
+
+vol_bar = 400
+vol_per = 0
+
+while cv2.waitKey(1) != 27:
+    success, frame = source.read()
+    # if we don&#39;t read the image successfully break the loop
+    if not success:
+        break
+
+    img = detector.findHands(frame)
+    landmark_list = detector.findPosition(img)
+    if len(landmark_list) != 0:
+        thumb_x, thumb_y = landmark_list[4][1], landmark_list[4][2]
+        index_x, index_y = landmark_list[8][1], landmark_list[8][2]
+        # Middle point of the line connecting the thumb and index fingers
+        cx, cy = (thumb_x + index_x) // 2, (thumb_y + index_y) // 2
+
+        cv2.circle(img, (thumb_x, thumb_y), 10, (255, 0, 255), cv2.FILLED)
+        cv2.circle(img, (index_x, index_y), 10, (255, 0, 255), cv2.FILLED)
+        cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+        cv2.line(img, (thumb_x, thumb_y), (index_x, index_y), (255, 0, 255), 3)
+
+        # Check the legnth of the line to define the UPPER and LOWER bounds
+        # Then when we are in the UPPER bound = 100% Volumne
+        line_length = np.hypot(index_x - thumb_x, index_y - thumb_y)
+
+        # Map range [30, 320] to [MIN_VOLUME, MAX_VOLUME]
+        vol = np.interp(line_length, [LOWER_BOUND, UPPER_BOUND], [MIN_VOLUME, MAX_VOLUME])
+        volume.SetMasterVolumeLevel(vol, None)
+
+        vol_bar = np.interp(line_length, [LOWER_BOUND, UPPER_BOUND], [400, 150])
+        vol_per = np.interp(line_length, [LOWER_BOUND, UPPER_BOUND], [0, 100])
+
+        if line_length &amp;lt; LOWER_BOUND:
+            cv2.circle(img, (cx, cy), 15, (0, 255, 0), cv2.FILLED)
+
+
+    cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
+    cv2.rectangle(img, (50, int(vol_bar)), (85, 400), (0, 255, 0), cv2.FILLED)
+    cv2.putText(img, f&amp;quot;{int(vol_per)}&amp;quot;, (40, 450), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
+
+    current_time = time.time()
+    fps = int(1 / (current_time - previous_time))
+    previous_time = current_time
+    cv2.putText(img, f&amp;quot;FPS: {fps}&amp;quot;, (40, 50), cv2.FONT_ITALIC, 1, (255, 0, 255), 2)
+
+    cv2.imshow(win_name, frame)
+
+# Since we exit the loop, its time to clean resources
+source.release()
+cv2.destroyWindow(win_name)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

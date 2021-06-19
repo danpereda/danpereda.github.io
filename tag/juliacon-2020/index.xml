@@ -54,7 +54,7 @@
 &lt;/ul&gt;
 &lt;h2 id=&#34;what-is-a-cone&#34;&gt;What is a Cone?&lt;/h2&gt;
 &lt;p&gt;A subset $C$ of a vector space $V$ is a cone if $\forall x \in C$ and positive scalars $\alpha$, the product $\alpha x \in C$.&lt;/p&gt;
-&lt;p&gt;A cone C is a convex cone if $\alpha x + \beta y \in C$, for any positive scalars $\alpha, \beta$, and any $x, y \in C$.&amp;rdquo;&lt;/p&gt;
+&lt;p&gt;A cone C is a convex cone if $\alpha x + \beta y \in C$, for any positive scalars $\alpha, \beta$, and any $x, y \in C$.&amp;quot;&lt;/p&gt;
 &lt;h2 id=&#34;conic-programming&#34;&gt;Conic Programming&lt;/h2&gt;
 &lt;p&gt;Conic programming problems are convex optimization problems in which a convex function is minimized over the intersection of an affine subspace and a convex cone. An example of a conic-form minimization problems, in the primal form is:&lt;/p&gt;
 &lt;p&gt;\begin{equation}
@@ -76,15 +76,15 @@ $$ y_i \in \mathcal{C}_i^*$$&lt;/p&gt;
 &lt;p&gt;$$ Q^n_r = \{ (t,u,x) \in \mathbb{R}^n: 2tu \ge \lVert x \rVert_2, t, u \ge 0 \} $$&lt;/p&gt;
 &lt;p&gt;These cones are represented in &lt;code&gt;JuMP&lt;/code&gt; using &lt;code&gt;MOI&lt;/code&gt; sets &lt;code&gt;SecondOrderCone&lt;/code&gt; and &lt;code&gt;RotatedSecondOrderCone&lt;/code&gt;&lt;/p&gt;
 &lt;h4 id=&#34;example-euclidean-projection-on-a-hyperplane&#34;&gt;Example: Euclidean Projection on a hyperplane&lt;/h4&gt;
-&lt;p&gt;For a given point $u_0$ and a set $K$, we refer to any point $u \in K$ which is closest to $u_0$ as a projection of $u_0$ on $K$. The projection of a point $u_0$ on a hyperplane $K = \{ u : p&amp;rsquo;\cdot u = q \}$ is given by:&lt;/p&gt;
+&lt;p&gt;For a given point $u_0$ and a set $K$, we refer to any point $u \in K$ which is closest to $u_0$ as a projection of $u_0$ on $K$. The projection of a point $u_0$ on a hyperplane $K = \{ u : p&#39;\cdot u = q \}$ is given by:&lt;/p&gt;
 &lt;p&gt;$$ \begin{align}
 &amp;amp; \min_{x \in \mathbb{R}^n} &amp;amp; \lVert u - u_0 \rVert \\&lt;br&gt;
-&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q 
+&amp;amp; \text{s.t. } &amp;amp; p&#39;\cdot u = q 
 \end{align}$$&lt;/p&gt;
 &lt;p&gt;We can model the above problem as the following conic program:&lt;/p&gt;
 &lt;p&gt;$$ \begin{align}
 &amp;amp; \min &amp;amp; t \\&lt;br&gt;
-&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; p&#39;\cdot u = q \\&lt;br&gt;
 &amp;amp;  \quad &amp;amp; (t, u - u_0) \in Q^{n+1}
 \end{align}$$&lt;/p&gt;
 &lt;p&gt;If we transform this to the form we saw above,&lt;/p&gt;
@@ -220,7 +220,7 @@ optimize!(dual_model)
 &lt;p&gt;We can also have an equivalent formulation using a Rotated Second - Order cone:&lt;/p&gt;
 &lt;p&gt;$$ \begin{align}
 &amp;amp; \min &amp;amp; t \\&lt;br&gt;
-&amp;amp; \text{s.t. } &amp;amp; p&amp;rsquo;\cdot u = q \\&lt;br&gt;
+&amp;amp; \text{s.t. } &amp;amp; p&#39;\cdot u = q \\&lt;br&gt;
 &amp;amp;  \quad &amp;amp; (t,  1/2, u - u_0) \in Q^{n+2}_r
 \end{align}$$&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;model = Model(optimizer_with_attributes(ECOS.Optimizer, &amp;quot;printlevel&amp;quot; =&amp;gt; 0))
@@ -433,7 +433,7 @@ $$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $
 &lt;li&gt;Two dozen predefined &lt;strong&gt;standard&lt;/strong&gt; and &lt;em&gt;exotic&lt;/em&gt; cones: e.g SDP, Sum-of-Squares and &amp;ldquo;Matrix&amp;rdquo; Sum-of-Squares for convexity/shape constraints.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;Customizable: &amp;ldquo;Bring your own &lt;em&gt;barrier&lt;/em&gt;&amp;rdquo; = &amp;quot; Bring your own cone&amp;rdquo;&lt;/li&gt;
+&lt;li&gt;Customizable: &amp;ldquo;Bring your own &lt;em&gt;barrier&lt;/em&gt;&amp;rdquo; = &amp;quot; Bring your own cone&amp;quot;&lt;/li&gt;
 &lt;li&gt;Take advantage of &lt;em&gt;Natural formulations&lt;/em&gt;.&lt;/li&gt;
 &lt;li&gt;Take advantage of Julia: multi-precision arithmetic, abstract linear operators, etc.&lt;/li&gt;
 &lt;/ul&gt;
@@ -499,7 +499,7 @@ $$ \dfrac{dy}{dt} = \delta xy - \gamma y$$&lt;/p&gt;
 &lt;p&gt;Something that may be silly but I find really nice is that you can write special caracters like 🐰, 🐺, α, β, γ and δ.&lt;/p&gt;
 &lt;p&gt;We just need to charge the package &lt;code&gt;DifferentialEquations.jl&lt;/code&gt; and write our differential equation as a function.&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using DifferentialEquations
-function lakta_volterra!(du,u,p,t)
+function lotka_volterra!(du,u,p,t)
     🐰,🐺 = u
     α,β,γ,δ = p
     du[1] = d🐰 = α*🐰 - β*🐰*🐺
@@ -508,7 +508,7 @@ end
 u₀ = [1.0,1.0]
 tspan = (0.0, 10.0)
 p = [1.5,1.0,3.0,1.0]
-prob = ODEProblem(lakta_volterra!,u₀,tspan,p)
+prob = ODEProblem(lotka_volterra!,u₀,tspan,p)
 sol = solve(prob)
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -600,7 +600,7 @@ $$ dy = (\delta xy - \gamma y)dt + \sigma_2 y dW_2$$&lt;/p&gt;
     du[1] = 0.3*🐰
     du[2] = 0.3*🐺
 end
-prob = SDEProblem(lakta_volterra!,multiplicative_noise!,u₀,tspan,p)
+prob = SDEProblem(lotka_volterra!,multiplicative_noise!,u₀,tspan,p)
 sol = solve(prob)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Solving only once would not be the best, since we have a randomness, thus we made use of another set of functions already implemented in &lt;code&gt;DifferentialEquations.jl&lt;/code&gt; called &lt;code&gt;Ensemble&lt;/code&gt;. Firstly we ensemble the problem, secondly we solve for a given number of trajectories (aditonal parameters like EnsembleThreads can be written in order to parelalize the problem and get aditional performance) and finally we do a summary of what happened.&lt;/p&gt;
@@ -762,7 +762,7 @@ p_final = res.minimizer
 &lt;p&gt;In just $1.745$ seconds and $8658251$ allocations: 361.20 MiB (counting plots) we get a loss function of $2.401364 \times 10^{-23}$ and parameters:
 $$\alpha =  1.5000000000009583 \approx 1.5$$
 $$\beta = 1.0000000000008002 \approx 1.0$$
-$$\gamma =  3.0000000000005405 \approx 3.0$$ 
+$$\gamma =  3.0000000000005405 \approx 3.0$$
 $$\delta = 0.9999999999995174 \approx 1.0$$&lt;/p&gt;
 &lt;p&gt;
 &lt;a href=&#34;https://diffeqflux.sciml.ai/dev/examples/optimization_ode/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Click here&lt;/a&gt; to see more&lt;/p&gt;
@@ -1303,9 +1303,9 @@ true_solution_long = solve(true_prob, Tsit5(), saveat = approximate_solution_lon
 &lt;h1 id=&#34;physics-informed-neural-networks&#34;&gt;Physics-Informed Neural Networks&lt;/h1&gt;
 &lt;h2 id=&#34;solve-and-ode-with-a-neural-network&#34;&gt;Solve and ODE with a neural network&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;Let $u&amp;rsquo; = f(u,t)$ with $u(0) = u_0$. We want to build a neural network $NN(t)$ that is the solution to this differential equation.&lt;/li&gt;
-&lt;li&gt;By definition then, we must have that $NN&amp;rsquo;(t) = f(NN(t),t)$ and $NN(0) = u_0$.&lt;/li&gt;
-&lt;li&gt;Define $\mathcal{C}(\theta) = \displaystyle \sum_{t} \lVert NN&amp;rsquo;(t) - f(NN(t),t) \rVert$ for $\theta$ the parameters of the ODE.
+&lt;li&gt;Let $u&#39; = f(u,t)$ with $u(0) = u_0$. We want to build a neural network $NN(t)$ that is the solution to this differential equation.&lt;/li&gt;
+&lt;li&gt;By definition then, we must have that $NN&#39;(t) = f(NN(t),t)$ and $NN(0) = u_0$.&lt;/li&gt;
+&lt;li&gt;Define $\mathcal{C}(\theta) = \displaystyle \sum_{t} \lVert NN&#39;(t) - f(NN(t),t) \rVert$ for $\theta$ the parameters of the ODE.
 &lt;ul&gt;
 &lt;li&gt;Then this cost is zero when $NN(t)$ is the solution to the ODE&lt;/li&gt;
 &lt;li&gt;Therefore we aim to minimize this loss to get the solution.&lt;/li&gt;
@@ -1314,8 +1314,8 @@ true_solution_long = solve(true_prob, Tsit5(), saveat = approximate_solution_lon
 &lt;li&gt;Extra trick: We can use $g(t) = tNN(t) + u_0$ as a test function instead of $NN(t)$. Notice that it is an approximator that always satisfies the boundary condition.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;example&#34;&gt;Example&lt;/h3&gt;
-&lt;p&gt;Let&amp;rsquo;s solve the ODE: $$u&amp;rsquo;(t) = cos(2\pi t) = f(u,t)$$ with initial condition $$u(0) = 1$$&lt;/p&gt;
-&lt;p&gt;Following the steps above, we create a neural network, a function $g(t)$ which we derivate and compute the $l_2$ norm of the difference between $g&amp;rsquo;(t)$ and $u&amp;rsquo;(t)$. In order to do this, we define $\epsilon$ as small as the precision of a &lt;em&gt;Float32&lt;/em&gt; allow us.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s solve the ODE: $$u&#39;(t) = cos(2\pi t) = f(u,t)$$ with initial condition $$u(0) = 1$$&lt;/p&gt;
+&lt;p&gt;Following the steps above, we create a neural network, a function $g(t)$ which we derivate and compute the $l_2$ norm of the difference between $g&#39;(t)$ and $u&#39;(t)$. In order to do this, we define $\epsilon$ as small as the precision of a &lt;em&gt;Float32&lt;/em&gt; allow us.&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-julia&#34;&gt;using Flux
 NNODE = Chain( x -&amp;gt; [x],
             Dense(1,32,tanh),
@@ -1341,7 +1341,7 @@ data = Iterators.repeated( (), 5000 )
 Flux.train!(loss, Flux.params(NNODE), data, opt; cb= cb)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Now we can compare to the real solution:&lt;/p&gt;
-&lt;p&gt;$$ u(t) = \int u&amp;rsquo;(t) dt = \int cos(2\pi t)dt = \dfrac{sin(2\pi t)}{2\pi} + constant$$&lt;/p&gt;
+&lt;p&gt;$$ u(t) = \int u&#39;(t) dt = \int cos(2\pi t)dt = \dfrac{sin(2\pi t)}{2\pi} + constant$$&lt;/p&gt;
 &lt;p&gt;but $u(0) = 1$ therefore we get $u(t) = 1 + \dfrac{sin(2\pi t)}{2\pi}$&lt;/p&gt;
 
 

@@ -631,7 +631,7 @@
 </ul>
 <h2 id="what-is-a-cone">What is a Cone?</h2>
 <p>A subset $C$ of a vector space $V$ is a cone if $\forall x \in C$ and positive scalars $\alpha$, the product $\alpha x \in C$.</p>
-<p>A cone C is a convex cone if $\alpha x + \beta y \in C$, for any positive scalars $\alpha, \beta$, and any $x, y \in C$.&rdquo;</p>
+<p>A cone C is a convex cone if $\alpha x + \beta y \in C$, for any positive scalars $\alpha, \beta$, and any $x, y \in C$.&quot;</p>
 <h2 id="conic-programming">Conic Programming</h2>
 <p>Conic programming problems are convex optimization problems in which a convex function is minimized over the intersection of an affine subspace and a convex cone. An example of a conic-form minimization problems, in the primal form is:</p>
 <p>\begin{equation}
@@ -653,15 +653,15 @@ $$ y_i \in \mathcal{C}_i^*$$</p>
 <p>$$ Q^n_r = \{ (t,u,x) \in \mathbb{R}^n: 2tu \ge \lVert x \rVert_2, t, u \ge 0 \} $$</p>
 <p>These cones are represented in <code>JuMP</code> using <code>MOI</code> sets <code>SecondOrderCone</code> and <code>RotatedSecondOrderCone</code></p>
 <h4 id="example-euclidean-projection-on-a-hyperplane">Example: Euclidean Projection on a hyperplane</h4>
-<p>For a given point $u_0$ and a set $K$, we refer to any point $u \in K$ which is closest to $u_0$ as a projection of $u_0$ on $K$. The projection of a point $u_0$ on a hyperplane $K = \{ u : p&rsquo;\cdot u = q \}$ is given by:</p>
+<p>For a given point $u_0$ and a set $K$, we refer to any point $u \in K$ which is closest to $u_0$ as a projection of $u_0$ on $K$. The projection of a point $u_0$ on a hyperplane $K = \{ u : p'\cdot u = q \}$ is given by:</p>
 <p>$$ \begin{align}
 &amp; \min_{x \in \mathbb{R}^n} &amp; \lVert u - u_0 \rVert \\<br>
-&amp; \text{s.t. } &amp; p&rsquo;\cdot u = q 
+&amp; \text{s.t. } &amp; p'\cdot u = q 
 \end{align}$$</p>
 <p>We can model the above problem as the following conic program:</p>
 <p>$$ \begin{align}
 &amp; \min &amp; t \\<br>
-&amp; \text{s.t. } &amp; p&rsquo;\cdot u = q \\<br>
+&amp; \text{s.t. } &amp; p'\cdot u = q \\<br>
 &amp;  \quad &amp; (t, u - u_0) \in Q^{n+1}
 \end{align}$$</p>
 <p>If we transform this to the form we saw above,</p>
@@ -797,7 +797,7 @@ optimize!(dual_model)
 <p>We can also have an equivalent formulation using a Rotated Second - Order cone:</p>
 <p>$$ \begin{align}
 &amp; \min &amp; t \\<br>
-&amp; \text{s.t. } &amp; p&rsquo;\cdot u = q \\<br>
+&amp; \text{s.t. } &amp; p'\cdot u = q \\<br>
 &amp;  \quad &amp; (t,  1/2, u - u_0) \in Q^{n+2}_r
 \end{align}$$</p>
 <pre><code class="language-julia">model = Model(optimizer_with_attributes(ECOS.Optimizer, &quot;printlevel&quot; =&gt; 0))
@@ -1010,7 +1010,7 @@ $$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $
 <li>Two dozen predefined <strong>standard</strong> and <em>exotic</em> cones: e.g SDP, Sum-of-Squares and &ldquo;Matrix&rdquo; Sum-of-Squares for convexity/shape constraints.</li>
 </ul>
 </li>
-<li>Customizable: &ldquo;Bring your own <em>barrier</em>&rdquo; = &quot; Bring your own cone&rdquo;</li>
+<li>Customizable: &ldquo;Bring your own <em>barrier</em>&rdquo; = &quot; Bring your own cone&quot;</li>
 <li>Take advantage of <em>Natural formulations</em>.</li>
 <li>Take advantage of Julia: multi-precision arithmetic, abstract linear operators, etc.</li>
 </ul>
@@ -1157,7 +1157,7 @@ $$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $
 
       <div class="media-body">
         <h5 class="card-title"><a href="https://danpereda.github.io/">Daniel Pereda</a></h5>
-        <h6 class="card-subtitle">PhD Student</h6>
+        <h6 class="card-subtitle">Data Scientist</h6>
         <p class="card-text">My research interests include optimization, game theory and operation research.</p>
         <ul class="network-icon" aria-hidden="true">
   
@@ -1171,7 +1171,7 @@ $$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $
     
     
     <li>
-      <a href="mailto:%20dpereda@dim.uchile.cl" >
+      <a href="mailto:%20dperedah@gmail.com" >
         <i class="fas fa-envelope"></i>
       </a>
     </li>
@@ -1386,7 +1386,7 @@ $$ \forall i, \exists r \text{ s.t } p_i(t) \in P^r \quad t \in [T_i, T_{i+1}] $
     
     
     
-    <script src="/js/academic.min.37431be2d92d7fb0160054761ab79602.js"></script>
+    <script src="/js/academic.min.38bcca7d01911f74920c35c1cca8a8ab.js"></script>
 
     
 

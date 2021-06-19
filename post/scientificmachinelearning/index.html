@@ -642,7 +642,7 @@ $$ \dfrac{dy}{dt} = \delta xy - \gamma y$$</p>
 <p>Something that may be silly but I find really nice is that you can write special caracters like 🐰, 🐺, α, β, γ and δ.</p>
 <p>We just need to charge the package <code>DifferentialEquations.jl</code> and write our differential equation as a function.</p>
 <pre><code class="language-julia">using DifferentialEquations
-function lakta_volterra!(du,u,p,t)
+function lotka_volterra!(du,u,p,t)
     🐰,🐺 = u
     α,β,γ,δ = p
     du[1] = d🐰 = α*🐰 - β*🐰*🐺
@@ -651,7 +651,7 @@ end
 u₀ = [1.0,1.0]
 tspan = (0.0, 10.0)
 p = [1.5,1.0,3.0,1.0]
-prob = ODEProblem(lakta_volterra!,u₀,tspan,p)
+prob = ODEProblem(lotka_volterra!,u₀,tspan,p)
 sol = solve(prob)
 </code></pre>
 
@@ -743,7 +743,7 @@ $$ dy = (\delta xy - \gamma y)dt + \sigma_2 y dW_2$$</p>
     du[1] = 0.3*🐰
     du[2] = 0.3*🐺
 end
-prob = SDEProblem(lakta_volterra!,multiplicative_noise!,u₀,tspan,p)
+prob = SDEProblem(lotka_volterra!,multiplicative_noise!,u₀,tspan,p)
 sol = solve(prob)
 </code></pre>
 <p>Solving only once would not be the best, since we have a randomness, thus we made use of another set of functions already implemented in <code>DifferentialEquations.jl</code> called <code>Ensemble</code>. Firstly we ensemble the problem, secondly we solve for a given number of trajectories (aditonal parameters like EnsembleThreads can be written in order to parelalize the problem and get aditional performance) and finally we do a summary of what happened.</p>
@@ -905,7 +905,7 @@ p_final = res.minimizer
 <p>In just $1.745$ seconds and $8658251$ allocations: 361.20 MiB (counting plots) we get a loss function of $2.401364 \times 10^{-23}$ and parameters:
 $$\alpha =  1.5000000000009583 \approx 1.5$$
 $$\beta = 1.0000000000008002 \approx 1.0$$
-$$\gamma =  3.0000000000005405 \approx 3.0$$ 
+$$\gamma =  3.0000000000005405 \approx 3.0$$
 $$\delta = 0.9999999999995174 \approx 1.0$$</p>
 <p>
 <a href="https://diffeqflux.sciml.ai/dev/examples/optimization_ode/" target="_blank" rel="noopener">Click here</a> to see more</p>
@@ -1446,9 +1446,9 @@ true_solution_long = solve(true_prob, Tsit5(), saveat = approximate_solution_lon
 <h1 id="physics-informed-neural-networks">Physics-Informed Neural Networks</h1>
 <h2 id="solve-and-ode-with-a-neural-network">Solve and ODE with a neural network</h2>
 <ul>
-<li>Let $u&rsquo; = f(u,t)$ with $u(0) = u_0$. We want to build a neural network $NN(t)$ that is the solution to this differential equation.</li>
-<li>By definition then, we must have that $NN&rsquo;(t) = f(NN(t),t)$ and $NN(0) = u_0$.</li>
-<li>Define $\mathcal{C}(\theta) = \displaystyle \sum_{t} \lVert NN&rsquo;(t) - f(NN(t),t) \rVert$ for $\theta$ the parameters of the ODE.
+<li>Let $u' = f(u,t)$ with $u(0) = u_0$. We want to build a neural network $NN(t)$ that is the solution to this differential equation.</li>
+<li>By definition then, we must have that $NN'(t) = f(NN(t),t)$ and $NN(0) = u_0$.</li>
+<li>Define $\mathcal{C}(\theta) = \displaystyle \sum_{t} \lVert NN'(t) - f(NN(t),t) \rVert$ for $\theta$ the parameters of the ODE.
 <ul>
 <li>Then this cost is zero when $NN(t)$ is the solution to the ODE</li>
 <li>Therefore we aim to minimize this loss to get the solution.</li>
@@ -1457,8 +1457,8 @@ true_solution_long = solve(true_prob, Tsit5(), saveat = approximate_solution_lon
 <li>Extra trick: We can use $g(t) = tNN(t) + u_0$ as a test function instead of $NN(t)$. Notice that it is an approximator that always satisfies the boundary condition.</li>
 </ul>
 <h3 id="example">Example</h3>
-<p>Let&rsquo;s solve the ODE: $$u&rsquo;(t) = cos(2\pi t) = f(u,t)$$ with initial condition $$u(0) = 1$$</p>
-<p>Following the steps above, we create a neural network, a function $g(t)$ which we derivate and compute the $l_2$ norm of the difference between $g&rsquo;(t)$ and $u&rsquo;(t)$. In order to do this, we define $\epsilon$ as small as the precision of a <em>Float32</em> allow us.</p>
+<p>Let&rsquo;s solve the ODE: $$u'(t) = cos(2\pi t) = f(u,t)$$ with initial condition $$u(0) = 1$$</p>
+<p>Following the steps above, we create a neural network, a function $g(t)$ which we derivate and compute the $l_2$ norm of the difference between $g'(t)$ and $u'(t)$. In order to do this, we define $\epsilon$ as small as the precision of a <em>Float32</em> allow us.</p>
 <pre><code class="language-julia">using Flux
 NNODE = Chain( x -&gt; [x],
             Dense(1,32,tanh),
@@ -1484,7 +1484,7 @@ data = Iterators.repeated( (), 5000 )
 Flux.train!(loss, Flux.params(NNODE), data, opt; cb= cb)
 </code></pre>
 <p>Now we can compare to the real solution:</p>
-<p>$$ u(t) = \int u&rsquo;(t) dt = \int cos(2\pi t)dt = \dfrac{sin(2\pi t)}{2\pi} + constant$$</p>
+<p>$$ u(t) = \int u'(t) dt = \int cos(2\pi t)dt = \dfrac{sin(2\pi t)}{2\pi} + constant$$</p>
 <p>but $u(0) = 1$ therefore we get $u(t) = 1 + \dfrac{sin(2\pi t)}{2\pi}$</p>
 
 
@@ -1706,7 +1706,7 @@ pdealg = NNPDENS(u0, σᵀ∇u, opt=opt)
 
       <div class="media-body">
         <h5 class="card-title"><a href="https://danpereda.github.io/">Daniel Pereda</a></h5>
-        <h6 class="card-subtitle">PhD Student</h6>
+        <h6 class="card-subtitle">Data Scientist</h6>
         <p class="card-text">My research interests include optimization, game theory and operation research.</p>
         <ul class="network-icon" aria-hidden="true">
   
@@ -1720,7 +1720,7 @@ pdealg = NNPDENS(u0, σᵀ∇u, opt=opt)
     
     
     <li>
-      <a href="mailto:%20dpereda@dim.uchile.cl" >
+      <a href="mailto:%20dperedah@gmail.com" >
         <i class="fas fa-envelope"></i>
       </a>
     </li>
@@ -1933,7 +1933,7 @@ pdealg = NNPDENS(u0, σᵀ∇u, opt=opt)
     
     
     
-    <script src="/js/academic.min.37431be2d92d7fb0160054761ab79602.js"></script>
+    <script src="/js/academic.min.38bcca7d01911f74920c35c1cca8a8ab.js"></script>
 
     
 
